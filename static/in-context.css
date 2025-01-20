@@ -1,0 +1,502 @@
+:root {
+    --primary: #0d1321;
+    --secondary: #1d2d44;
+    --tertiary: #3e5c76;
+    --accent: #748cab;
+    --lightaccent: #f0ebd8;
+    --textcolor: #FFFFF0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 14px;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+body {
+    width: 95vw;
+    min-height: 100vh;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: start;
+    background-color: var(--primary);
+}
+
+ic-context-owner {
+    margin-top: 10px;
+    color: var(--textcolor);
+    padding: 10px;
+    height: fit-content;
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+ic-context-manager {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: start;
+    gap: 10px;
+    width: 100%;
+    margin: 0 auto;
+    background-color: var(--secondary);
+    color: var(--textcolor);
+    padding: 10px;
+    height: fit-content;
+    box-shadow: -1px -1px 2px var(--accent);
+}
+
+ic-context-manager h2 {
+    width: 100%;
+    text-align: left;
+}
+
+ic-context-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid var(--accent);
+    box-shadow: 0px 0px 2px var(--accent);
+    /* height: 130px;
+    overflow: scroll; */
+    width: 100%;
+}
+
+ic-context-info .heading {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+ic-context-info ic-context-control {
+    width: fit-content;
+    align-self: end;
+}
+
+ic-context-editor {
+    width: 100%;
+    height: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid var(--accent);
+    box-shadow: 0px 0px 2px var(--accent);
+    overflow: scroll;
+}
+
+ic-context-editor form {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 90%;
+    margin: auto;
+}
+
+ic-context-editor-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+}
+
+ic-context-editor-field label {
+    font-weight: 600;
+}
+
+ic-context-editor-field input {
+    max-width: 50%;
+}
+
+ic-context-editor .context-controls {
+    align-self: end;
+}
+
+ic-context-editor ic-context-control {
+    width: 50px;
+    text-align: center;
+}
+
+ic-context-switcher {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 10px;
+    padding: 10px;
+    /* border: 1px solid var(--accent);
+    box-shadow: 0px 0px 2px var(--accent); */
+    overflow: scroll;
+    width: 100%;
+}
+
+.context-controls {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+ic-context-switcher .context-controls {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+ic-context {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    gap: 10px;
+    width: 100%;
+    margin: 0 auto 20px;
+}
+
+ic-context .systems {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    flex-grow: 1;
+}
+
+ic-system {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background-color: var(--secondary);
+    color: var(--textcolor);
+    padding: 10px;
+    max-height: 70vh;
+    box-shadow: -1px -1px 2px var(--accent);
+}
+
+ic-system h2 {
+    width: 100%;
+    text-align: left;
+}
+
+.ic-item-display {
+    display: flex;
+    flex-direction: column;
+    row-gap: 8px;
+    padding: 5px;
+    overflow: scroll;
+    width: 100%;
+    border-radius: 5px;
+    margin: 0;
+    background-color: var(--secondary);
+    margin-bottom: auto;
+}
+
+ic-item {
+    padding: 8px;
+    cursor: pointer;
+    box-shadow: -1px -1px 2px var(--accent);
+    background-color: var(--primary);
+    border: 1px solid var(--primary);
+}
+
+ic-item .name {
+    user-select: none;
+}
+
+ic-item.selected-item {
+    box-shadow: 0 0 5px var(--lightaccent);
+    border: 1px solid var(--lightaccent);
+}
+
+ic-item.showing-details {
+    box-shadow: 0 0 2px var(--accent);
+}
+
+ic-item.showing-details.selected-item {
+    box-shadow: inset 0 0 5px var(--lightaccent);
+}
+
+.ic-detail-display {
+    width: 95%;
+    margin: 10px auto;
+    display: flex;
+    flex-wrap: wrap;
+    color: var(--textcolor);
+    gap: 5px;
+    max-height: 40vh;
+    overflow: scroll;
+    padding: 10px;
+}
+
+.ic-detail-display.hidden {
+    display: none;
+}
+
+ic-detail {
+    color: inherit;
+    padding: 8px;
+    text-align: left;
+    line-height: 1.2;
+    overflow-wrap: break-word;
+    width: 100%;
+    box-shadow: 0 0 2px var(--accent);
+    border: 1px solid transparent;
+}
+
+ic-detail pre, ic-item pre {
+    background-color: var(--primary);
+    overflow: scroll;
+    padding: 10px;
+}
+
+ic-detail.selected-detail {
+    box-shadow: 0 0 5px var(--lightaccent);
+    border: 1px solid var(--lightaccent);
+}
+
+ic-detail > * {
+    margin-bottom: 8px;
+}
+
+ic-detail > *:last-child {
+    margin-bottom: 0;
+}
+
+ic-detail code, ic-item code {
+    color: var(--lightaccent);
+    padding: 0 3px;
+    text-wrap-mode: nowrap;
+    background-color: var(--primary);
+}
+
+ic-detail a, ic-item a {
+    color: lightblue;
+    text-decoration: none;
+}
+
+ic-detail a:hover, ic-item a:hover {
+    color: var(--lightaccent);
+    text-decoration: underline;
+}
+
+ic-system.conversations ic-detail {
+    background-color: transparent;
+}
+
+ic-system.conversations ic-detail.user-role {
+    margin-left: auto;
+    background-color: var(--tertiary);
+    max-width: 75%;
+}
+
+ic-detail ul, ic-detail ol, ic-item ul, ic-item ol {
+    margin-left: 40px;
+}
+
+.ic-control-display {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+ic-control, ic-context-control {
+    background-color: var(--tertiary);
+    text-decoration: none;
+    color: var(--textcolor);
+    border-radius: 5px;
+    box-shadow: 0 -1px 2px var(--lightaccent);
+    font-family: inherit;
+    padding: 8px;
+    border: 1px solid var(--secondary);
+    height: fit-content;
+    display: none;
+    cursor: pointer;
+}
+
+ic-control.primed-control, ic-context-control.primed-control {
+    display: initial;
+}
+
+ic-control.primed-control:active, ic-context-control.primed-control:active {
+    box-shadow: 0 0 2px var(--lightaccent);
+}
+
+ic-form, ic-context-form {
+    padding: 8px;
+    width: 100%;
+}
+
+ic-form > form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+ic-form > form > h3 {
+    align-self: start;
+}
+
+ic-form .form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+ic-form .field-section {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+ic-form .field-section h4 {
+    align-self: start;
+}
+
+ic-form .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    justify-content: center;
+    align-items: start;
+    width: 100%;
+}
+
+ic-form .form-controls {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 5px;
+    padding: 5px;
+    width: 100%;
+}
+
+ic-form .form-controls * {
+    height: 30px;
+    width: 100%;
+}
+
+ic-form input, ic-form textarea, ic-context-editor-field input, ic-context-editor-field textarea {
+    background-color: var(--secondary);
+    color: var(--textcolor);
+    border-radius: 5px;
+    padding: 5px;
+    font-family: inherit;
+    line-height: 1.5;
+    font-size: 0.9rem;
+    width: 100%;
+}
+
+form input:focus, form textarea:focus {
+    outline: none;
+    box-shadow: inset 0 0 5px var(--accent);
+}
+
+ic-form button[type="submit"], ic-context-form button[type="submit"] {
+    color: var(--textcolor);
+    padding: 3px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    background-color: var(--tertiary);
+    box-shadow: 0 -1px 2px var(--lightaccent);
+}
+
+ic-form button[type="button"], ic-context-form button[type="button"] {
+    color: var(--textcolor);
+    border-radius: 5px;
+    border: none;
+    padding: 3px;
+    font-size: 1rem;
+    background-color: var(--tertiary);
+    box-shadow: 0 -1px 2px var(--lightaccent);
+}
+
+form button {
+    cursor: pointer;
+}
+
+form button[type="submit"]:active {
+    box-shadow: 0 0 2px var(--lightaccent);
+}
+
+form button[type="button"]:active {
+    box-shadow: 0 0 2px var(--lightaccent);
+}
+
+ic-spinner .spinner {
+    height: 10px;
+    width: 85%;
+    margin: 0 auto 5px;
+    animation: 400ms infinite alternate cubic-bezier(0.1, 0.6, 0.7, 0.2) spinner;
+    border-radius: 50% 50% 25% 25%;
+}
+
+@keyframes spinner {
+    
+    from {
+        background-color: silver;
+    }
+    to {
+        background-color: gold;
+    }
+}
+
+/* This is or ic detail displays while they're not showing. */
+.hidden {
+    visibility: hidden;
+}
+
+/* This gets added to forms to make them disappear while an operation is happening. Important that it stays on the page for the functions to work properly and so that the user can't click on any items or details (because primecontrols doesn't do anything if there's a form on the system). */
+.ghost {
+    visibility: hidden;
+    position: absolute;
+}
+
+ic-form .hidden-field {
+    display: none;
+}
+
+/* This is for debugging. */
+.highlight {
+    border: 5px solid yellow;
+}
+
+@media screen and (min-width: 600px) {
+    
+    ic-context {
+        flex-direction: row;
+    }
+
+    ic-context-owner {
+        justify-content: end;
+    }
+}
+  
