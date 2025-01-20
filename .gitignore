@@ -1,9 +1,5 @@
 *.db
 .venv
 __pycache__
-backlog_files
 *.csv
-*.txt
-demo_files
 operation_log
-av_package_test.py

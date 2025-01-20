@@ -6,7 +6,7 @@ A dynamic system message is inserted at the beginning of each conversation with 
 
 The result: more useful responses and faster conversations.
 
-## Setup Instructions (Development Server)
+## Setup Instructions for a Development Server
 
 - `export OPENAI_API_KEY='your_openai_api_key'`
 - `sudo apt update && sudo apt upgrade`
@@ -17,11 +17,11 @@ The result: more useful responses and faster conversations.
 - `pip install openai`
 - `pip install flask`
 - `git clone git@github.com:jkgarber/InContext.git`
-- `python3 inContext.py`
+- `python3 inContext.py <user_name>`
 
 ## User Guide
 
-This user guide provides a high-level overview of the key features and functionalities and exposes you to the key terms and concepts involved. Afterwards, for a more hands-on experience, check out the tutorial which walks you through the app with an example use case.
+This user guide provides a high-level overview of the key features and functionalities and exposes you to the key terms and concepts involved. Afterwards, for a more hands-on how-to, check out the tutorial which'll walk you through the app with an example use case.
 
 ### 1. Page Layout
 
@@ -29,19 +29,19 @@ The page layout (i.e. user interface) consists of three key sections.
 
 |Section|Description|
 |-|-|
-|Context Owner|Controls allowing you to create a new context and/or delete the current context.|
-|Context Panel|A display showing info about the current context, and controls for editing the current context and/or switching to a different context.|
+|Context Owner|Controls allowing the user to create a new context and/or delete the current context.|
+|Context Manager|A display showing info about the current context, and controls for editing the current context and/or switching to a different context.|
 |Context|A container for context-specific data and conversations.|
 
 ### 2. Contexts
 
 A context provides a space for systems to process data. (For more information on systems, see *3. Systems*, below.)
 
-Each context has a name and a description. Both of these properties are decides by the user.
+Each context has a name and a description. Both of these properties are decided by the user.
 
-You can create and delete contexts using the buttons in the context owner section.
+The user can create and delete contexts using the buttons in the context owner section.
 
-Once you create a context, you can edit the name, description, and associated systems by clicking on the edit button in the top-right corner of the context panel.
+Once the user creates a context, he can edit the name, description, and associated systems by clicking on the edit button in the top-right corner of the context manager section.
 
 ### 3. Systems
 
@@ -49,18 +49,18 @@ A system is a virtual device for processing and displaying data for the user.
 
 Each system instance has a name and a related context.
 
-The system name determines which data processes occur within the system. There are two systems currently supported: *Items* and *Conversations*.
+The system name determines which data processes occur within the system. The app currently supports two systems: *Items* and *Conversations*.
 
 ### 4. Items
 
 To avoid confusion, a distinction needs to be made between the different meanings of the word *Items*:
 
 - **As a System**: Items is the name of the system with which the user stores and displays their contextual data. (See *3. Systems*, above.)
-- **As a Data Type**: An item is a piece of data provided by the user.
+- **As a Data Type**: An item is a kind of datum put into a system by the user.
 
 This section is about the latter meaning, that of items as pieces of data provied by the user.
 
-You can think of items as being in a list, like a list of todo's, a list of requirements, a list of your favorite movies, or as we'll see later as well, a list of conversations.
+You can think of items as a sort of item in a list, like a list of todo items, a list of requirements, a list of your favorite movies, or as we'll see later as well, a list of conversations.
 
 Each item has an id, a name, a rank, a related system, and a related context.
 
@@ -101,6 +101,8 @@ With the conversation, the LLM receives a system-role instruction for situationa
 
 ## Tutorial
 
+*Example Use Case: Movie Recommendation Based on Favorite Movies.*
+
 Follow the steps below to learn the basics and experience an example use case for the very first time!
 
 ### 1. Create a new context containing both systems.
@@ -120,13 +122,13 @@ Follow the steps below to learn the basics and experience an example use case fo
 
 ### 3. Add a detail containing the reason why you like that movie.
 
-1. Double-click on the item you just created. It now has a white border and expanded in size. This indicates it's been selected and is showing the related details. (There are no details yet so it's devoid of content, apart from the name of the movie.)
+1. Double-click on the item you just created. It now has a white border and expanded in size. This indicates it's been selected and is showing the related details. (There are no details yet so it's devoid of content, apart from the name of the movie and the year it was released.)
 2. If you made a mistake when adding the movie, click on *Update*. Then you can fix it, and click on the *checkmark* button to confirm.
 3. Re-select the item if needed. (You might have made an action which caused a de-selection, such as clicking off the item, or closing a form.)
-4. Click on *Create*. This will open the form again, except this time it's enabling you to add a detail. (For more information about interacting with items and details, see *Instructions for Interacting with Items and Details*, below.)
+4. Click on *Create*. This will open the form again, except this time it's enabling you to add a detail. (For more information about interacting with items and details, see *Help: Selecting and De-selecting Items and Details*, below.)
 5. Enter some text explaining why you like that particular movie, and confirm by clicking the *checkmark* button. Now the detail has been added to the item.
 
-### 4. Ask your friends to add an item with the name of their favourite movie.
+### 4. Ask your friends to each add their own item for their favourite movie.
 
 - Refer to the instructions in step 2.
 
@@ -140,10 +142,12 @@ Follow the steps below to learn the basics and experience an example use case fo
 2. Enter the name of the conversation: "Choosing a movie on {{ today's date }}.
 3. Click the *checkmark* button to confirm. The conversation item is now saved in the Conversations system and is being displayed.
 4. Double-click on the conversation item.
-5. Click the *Create* button to start the conversation. Ask ChatGPT to recommend a movie by creating a message: "Hi there, I made a list of mine and my friends' favourite movies with reasons as to why we enjoy those particular movies so much. Based on this information, can you make a reccommendation of a movie that we'll all enjoy?"
+5. Click the *Create* button to start the conversation. Ask ChatGPT to recommend a movie by creating a message: "Hi there, I made a list of mine and my friends' favourite movies with reasons as to why we enjoy those particular movies so much. Based on this information, can you reccommend a movie that we'll all enjoy?"
 6. If needed, continue the conversation with ChatGPT by sending further messages. To do so, use the *Create* button while the conversation is selected.
 
-## Instructions for Interacting with Items and Details
+## Help: Selecting and De-selecting Items and Details
+
+If you have an issue with selecting an item or a detail, please read this article. It aims to provide complete clarity on how item and detail selection works.
 
 ### Item selection and displaying details
 
@@ -154,7 +158,7 @@ There are two ways to select an item:
 
 Double-clicking the item has the added effect of showing the details for that item.
 
-You can only select one item at a time per system. To select another item you must first de-select the currently selected item. There are two ways to de-select an item
+You can only select one item at a time per system. To select another item you must first de-select the currently selected item. There are two ways to de-select an item:
 
 - Click on the selected item to de-select it.
 - Click on the system (anywhere that's not an item) to de-select the selected item.
