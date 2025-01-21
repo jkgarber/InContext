@@ -31,7 +31,7 @@ import openai
 import os
 import json
 openai_client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"),)
-gpt_model = 'gpt-4o'
+gpt_model = 'gpt-4o-mini'
 def chat_gpt(conversation_history, user_content, item_list, context):
     if context == 'Testing':
         memory = f"The user's name is {user_name}. He is developing a ChatGPT wrapper because he wants to work with AI more independently and in his own way. You are communicating with {user_name} via the wrapper. This conversation is part of a testing routine for the app's development. The list of items you are about to receive contains test data, which is managed by {user_name} via the app's UI. Items: {item_list}"
