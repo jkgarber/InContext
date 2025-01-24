@@ -856,7 +856,9 @@ def contexts():
             print(error)
             return 'server error', 500
     else:
-        if request.json['action'] == 'update':
+        if request.json['action'] == 'switch':
+            return jsonify(dict(msg='Nothing to do')), 200
+        elif request.json['action'] == 'update':
             try:
                 con = sqlite3.connect(db)
                 # con.row_factory = dict_factory

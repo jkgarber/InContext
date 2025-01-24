@@ -26,137 +26,165 @@ body {
     flex-direction: column;
     gap: 10px;
     align-items: start;
+    background-color: #111;
+}
+
+ic-overview {
+    color: var(--textcolor);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+ic-overview .top {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+}
+
+ic-switcher {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+ic-switch, ic-owner-control, ic-manager-control {
+    box-shadow: 0 -1px 2px var(--lightaccent);
+    padding: 8px;
+    border: 1px solid var(--tertiary);
+    cursor: pointer;
+    width: fit-content;
+}
+
+ic-switch {
     background-color: var(--primary);
 }
 
-ic-context-owner {
-    margin-top: 10px;
-    color: var(--textcolor);
-    padding: 10px;
-    height: fit-content;
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
+ic-owner-control.create {
+    background-color: #003300;
 }
 
-ic-context-manager {
+ic-owner-control.delete {
+    background-color: #330000;
+}
+
+ic-manager-control {
+    background-color: var(--secondary);
+}
+
+ic-switch:active, ic-owner-control:active, ic-manager-control:active {
+    box-shadow: 0 0 2px var(--lightaccent);
+}
+
+ic-owner {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+ic-manager {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    align-items: start;
-    gap: 10px;
-    width: 100%;
-    margin: 0 auto;
-    background-color: var(--secondary);
-    color: var(--textcolor);
+    gap: 8px;
     padding: 10px;
     height: fit-content;
     box-shadow: -1px -1px 2px var(--accent);
-}
-
-ic-context-manager h2 {
     width: 100%;
-    text-align: left;
+    margin: 0 auto;
+    background-color: var(--secondary);
 }
 
-ic-context-info {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px;
-    border: 1px solid var(--accent);
-    box-shadow: 0px 0px 2px var(--accent);
-    /* height: 130px;
-    overflow: scroll; */
-    width: 100%;
-}
-
-ic-context-info .heading {
+ic-manager .upper {
     display: flex;
     flex-direction: row;
-    gap: 15px;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
+    gap: 10px;
 }
 
-ic-context-info ic-context-control {
-    width: fit-content;
-    align-self: end;
+ic-manager-form {
+    padding: 10px;
+    background-color: var(--secondary);
+    box-shadow: -1px -1px 2px var(--accent);
 }
 
-ic-context-editor {
-    width: 100%;
-    height: 130px;
+ic-manager-form form {
     display: flex;
     flex-direction: column;
-    align-items: start;
     gap: 10px;
-    padding: 10px;
-    border: 1px solid var(--accent);
-    box-shadow: 0px 0px 2px var(--accent);
-    overflow: scroll;
 }
 
-ic-context-editor form {
+.manager-form-fields {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 10px;
-    width: 90%;
-    margin: auto;
 }
 
-ic-context-editor-field {
+.manager-field-section {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    width: 100%;
 }
 
-ic-context-editor-field label {
-    font-weight: 600;
-}
-
-ic-context-editor-field input {
-    max-width: 50%;
-}
-
-ic-context-editor .context-controls {
-    align-self: end;
-}
-
-ic-context-editor ic-context-control {
-    width: 50px;
-    text-align: center;
-}
-
-ic-context-switcher {
+.manager-field {
     display: flex;
+    gap: 3px;
+    width: 100%;
+    max-width: 500px;
+}
+
+.text-field {
     flex-direction: column;
-    align-items: start;
-    gap: 10px;
-    padding: 10px;
-    /* border: 1px solid var(--accent);
-    box-shadow: 0px 0px 2px var(--accent); */
-    overflow: scroll;
+}
+
+.text-field input, .text-field textarea {
+    background-color: var(--secondary);
+    color: var(--textcolor);
+    border-radius: 5px;
+    padding: 5px;
+    font-family: inherit;
+    line-height: 1.5;
+    font-size: 0.9rem;
     width: 100%;
 }
 
-.context-controls {
+.checkbox-field {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-direction: row-reverse;
+    justify-content: start;
     align-items: center;
+    gap: 5px;
 }
 
-ic-context-switcher .context-controls {
+ic-manager-form .form-controls {
     display: flex;
     flex-direction: row;
-    gap: 10px;
+    flex-wrap: nowrap;
+    gap: 5px;
+    padding: 5px;
+    width: 100%;
+    max-width: 500px;
+}
+
+ic-manager-form .form-controls * {
+    /* height: 15px; */
+    width: 100%;
+    background-color: var(--tertiary);
+    text-decoration: none;
+    color: var(--textcolor);
+    border-radius: 5px;
+    box-shadow: 0 -1px 2px var(--lightaccent);
+    font-family: inherit;
+    padding: 3px;
+    border: 1px solid var(--secondary);
+    height: fit-content;
 }
 
 ic-context {
@@ -319,7 +347,7 @@ ic-detail ul, ic-detail ol, ic-item ul, ic-item ol {
     align-items: flex-end;
 }
 
-ic-control, ic-context-control {
+ic-control {
     background-color: var(--tertiary);
     text-decoration: none;
     color: var(--textcolor);
@@ -333,11 +361,11 @@ ic-control, ic-context-control {
     cursor: pointer;
 }
 
-ic-control.primed-control, ic-context-control.primed-control {
+ic-control.primed-control {
     display: initial;
 }
 
-ic-control.primed-control:active, ic-context-control.primed-control:active {
+ic-control.primed-control:active {
     box-shadow: 0 0 2px var(--lightaccent);
 }
 
@@ -478,6 +506,10 @@ ic-spinner .spinner {
 .ghost {
     visibility: hidden;
     position: absolute;
+}
+
+.display-none {
+    display: none;
 }
 
 ic-form .hidden-field {

@@ -1,46 +1,13 @@
-let icContextOwner;
-let icContextManager;
-let icContext;
-
 function main() {
-    document.title = `inContext/${capitalizeString(CONTEXT)}`;
-    icContextManager = new IcContextManager();
-    document.body.appendChild(icContextManager);
-    icContextOwner = new IcContextOwner();
-    document.body.prepend(icContextOwner);
-    icContext = new IcContext();
-    document.body.appendChild(icContext);
+    
+    document.title = `inContext/${CONTEXT}`;
+    
+    const icOverview = new IcOverview();
+    document.body.appendChild(icOverview);
+
+    const icContext = new IcContext();
+    document.body.appendChild(icContext);   
 }
-
-
-class IcContextOwner extends HTMLElement {
-    constructor() {
-        super()
-    }
-    connectedCallback() {
-        const createButton = new IcContextControl(CONTEXT, "create", "&#10022; Create new context");
-        this.appendChild(createButton);
-        const deleteButton = new IcContextControl(CONTEXT, "delete", "&#8856; Delete this context");
-        this.appendChild(deleteButton);
-    }
-
-    makeFilename() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-
-        let filename = `${capitalizeString(CONTEXT)}_EXPORT_ON_${year}_${month}_${day}_AT_${hours}_${minutes}_${seconds}`;
-        filename = filename.replace(/\s+/g, '_');
-        filename = filename.replace(/[<>:"/\\|?*\x00-\x1F]/g, '');
-        filename = filename.trim();
-        return filename;
-    }
-}
-customElements.define("ic-context-owner", IcContextOwner);
 
 
 function capitalizeString(s) {
@@ -48,308 +15,757 @@ function capitalizeString(s) {
 }
 
 
-class IcContextManager extends HTMLElement {
+class IcOverview extends HTMLElement {
+
     constructor() {
-        super();
+
+        super();    
     }
+
     async connectedCallback() {
+
+        this.mdConverter = new showdown.Converter({
+            tables: true,
+            tasklists: true
+        });
+        
         const resource = `/api/contexts?withSystems=${CONTEXT}`;
+        
         try {
             const response = await fetch(resource);
-            if(!response.ok) {
+            
+            if (!response.ok) {
+
                 throw new Error(`HTTP error: ${response.status}`);
             }
+            
             const json = await response.json();
-            const contextSwitcher = new IcContextSwitcher(json.contexts);
-            this.icContextSwitcher = contextSwitcher;
-            this.appendChild(contextSwitcher);
-            const contextInfo = new IcContextInfo();
-            this.icContextInfo = contextInfo;
-            this.appendChild(contextInfo);
-        } catch (error) {
+
+            this.icSystems = new Array()
+            for (const system of json.systems) {
+                this.icSystems.push(system.name);
+            }
+
+            const top = document.createElement("div");
+            top.classList.add("top");
+
+            this.icSwitcher = new IcSwitcher(this, json.contexts);
+            top.appendChild(this.icSwitcher);
+
+            this.icOwner = new IcOwner(this);
+            top.appendChild(this.icOwner);
+
+            this.appendChild(top);
+
+            this.icManager = new IcManager(this);
+            this.appendChild(this.icManager);
+        }
+        
+        catch (error) {
+
             console.error(`Fetch problem: ${error.message}`);
         }
     }
-    controlClicked(event) {
-        event.stopPropagation
-        const editorFields = icContextManager.icContextEditorFields;
-        switch (this.icContextControlType) {
-            case "switch":
-                window.location = `/${this.icContext}`;
-                break;
-            case "openEditor":
-                icContextManager.icContextInfo.remove();
-                const icContextEditor = new IcContextEditor();
-                icContextManager.prepend(icContextEditor);
-                break;
-            case "update":{
-                icContextManager.icContextSwitcher.remove();
-                const payload = new Object();
-                payload.action = this.icContextEditorAction;
-                payload.context = CONTEXT;
-                const values = new Object();
-                values.name = editorFields.name.childNodes[1].value;
-                values.description = editorFields.description.childNodes[1].value;
-                values.systems = editorFields.systems.childNodes[1].value;
-                payload.values = values;
-                icContextManager.sendClientRequest(payload);
-                icContextManager.icContextEditor.remove();
-                icContextManager.icContextEditor = null;
-                break;
-            }
-            case "create": {
-                const payload = new Object();
-                payload.action = "create";
-                icContextManager.sendClientRequest(payload);
-                break;
-            }
-            case "delete": {
-                const payload = new Object();
-                payload.action = "delete";
-                payload.context = CONTEXT;
-                icContextManager.sendClientRequest(payload);
-                break;
-            }
-            case "cancel":
-                icContextManager.icContextEditor.remove();
-                icContextManager.icContextEditor = null;
-                const newContextInfo = new IcContextInfo();
-                icContextManager.prepend(newContextInfo);
-                icContextManager.icContextInfo = newContextInfo;
-                break;
-            default:
-                console.error("Unexpected switch statement fall-through.");
-        }
-        if (editorFields) icContextManager.icContextEditorFields = null;
+
+    removeManagerForm() {
+    
+        this.icManagerForm.remove();
+        this.icManagerForm = null;
+        this.icManager.classList.remove("display-none");
     }
-    async sendClientRequest(payload) {
+
+    async sendRequest(payload) {
+
         const resource = "api/contexts";
+        
         const options = {
+            
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         }
+        
         try {
             const response = await fetch(resource, options);
+            
+            if (!response.ok) {
+        
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+            
+            const json = await response.json();
+            this.updateDisplay(payload, json);
+        }
+        catch (error) {
+            
+            console.error(`Fetch problem: ${error.message}`);
+        }
+            
+    }
+
+    updateDisplay(payload, json) {
+        
+        switch (payload.action) {
+
+            case "switch": {
+                //  This could be rather upgraded to update the CONTEXT variable and the page components, and the url in the browser bar if needed. Or you could just say who cares what's showing in the url? 
+                window.location = `/${payload.data.context}`;
+                break;
+            }
+            
+            case "create": {
+    
+                window.location = `/${json.response.newContext}`;
+                break;
+            }
+            
+            case "delete": {
+    
+                window.location = `/`;
+                break;
+            }
+            
+            case "update": {
+                // Change this to update the content in the contextinfo component.
+                window.location = `/${payload.data.contextNewName}`;
+                break;
+            }
+            
+            default:
+                console.error("Unexpected switch statement fall-through.");
+        }
+    }
+}
+customElements.define("ic-overview", IcOverview);
+
+
+class IcSwitcher extends HTMLElement {
+    
+    constructor(overview, contexts) {
+        
+        super();
+        this.icOverview = overview;
+        this.icContexts = contexts;
+    }
+    
+    connectedCallback() {
+        
+        for (const context of this.icContexts) {
+
+            if (context.name != CONTEXT) {
+                const control = new IcSwitch(context.name, this.icOverview);
+                this.appendChild(control);
+            }
+        }
+    }
+    
+    // addControl(spec) {
+        
+    //     const control = new IcOverviewControl(spec.action, spec.name);
+    //     this.icControls.appendChild(control);
+    // }
+    
+    // removeControl(context) {
+    
+    //     this.icControls.childNodes.forEach((l) => {
+    //         if (l.icContext == context) l.remove();
+    //     });
+    // }
+}
+customElements.define("ic-switcher", IcSwitcher);
+
+
+class IcSwitch extends HTMLElement {
+
+    constructor(context, overview) {
+
+        super();
+        this.icContext = context;
+        this.icOverview = overview;
+    }
+
+    connectedCallback() {
+
+        this.innerHTML = this.icContext;
+        this.addEventListener("click", (event) => {
+            event.stopPropagation();
+            const payload = {
+                "action": "switch",
+                "data": {
+                    "context": this.icContext
+                }
+            };
+            this.icOverview.sendRequest(payload);
+        });
+    }
+}
+customElements.define("ic-switch", IcSwitch);
+
+
+class IcOwner extends HTMLElement {
+    
+    constructor(overview) {
+    
+        super();
+        this.icOverview = overview;
+    }
+    
+    connectedCallback() {
+    
+        const createBtn = new IcOwnerControl(this.icOverview, "create", "&#10022; Create");
+        this.appendChild(createBtn);
+    
+        const deleteBtn = new IcOwnerControl(this.icOverview, "delete", "&#8856; Delete");
+        this.appendChild(deleteBtn);
+    }
+}
+customElements.define("ic-owner", IcOwner);
+
+
+class IcOwnerControl extends HTMLElement {
+
+    constructor(overview, action, name) {
+
+        super();
+
+        this.icOverview = overview;
+        this.icAction = action;
+        this.icName = name;
+    }
+
+    connectedCallback() {
+
+        this.innerHTML = this.icName;
+        this.classList.add(this.icAction);
+        this.addEventListener("click", (event) => {
+            event.stopPropagation();
+            const payload = {
+                "action": this.icAction,
+                "data": {
+                    "context": CONTEXT
+                }
+            };
+            this.icOverview.sendRequest(payload);
+        });
+    }
+
+}
+customElements.define("ic-owner-control", IcOwnerControl);
+
+
+class IcManager extends HTMLElement {
+    
+    constructor(overview) {
+        
+        super();
+        this.icOverview = overview;
+    }
+
+    async connectedCallback() {
+        
+        const resource = `/api/contexts?withSystems=${CONTEXT}`;
+
+        try {
+        
+            const response = await fetch(resource);
+        
             if(!response.ok) {
                 throw new Error(`HTTP error: ${response.status}`);
             }
+        
             const json = await response.json();
-            switch (payload.action) {
-                case "update": {
-                    window.location = `/${json.context}`;
-                    break;
-                }
-                case "create": {
-                    window.location = `/${json.newContext}`;
-                    break;
-                }
-                case "delete": {
-                    window.location = `/`;
-                    break;
-                }
-                default:
-                    console.error("Unexpected switch statement fall-through.");
-            }
+
+            this.icSystems = json.systems;
+
+            const upper = document.createElement("div");
+            upper.classList.add("upper");
+                        
+            const name = document.createElement("h1");
+            name.innerHTML = CONTEXT;
+            upper.appendChild(name);
+            
+            const control = new IcManagerControl(this);
+            upper.appendChild(control);
+
+            const lower = document.createElement("div");
+            lower.classList.add("lower");
+            
+            const description = document.createElement("p");
+            description.innerHTML = this.icOverview.mdConverter.makeHtml(DESCRIPTION);
+            lower.appendChild(description);
+            
+            this.appendChild(upper);
+            this.appendChild(lower);
         }
+        
         catch (error) {
             console.error(`Fetch problem: ${error.message}`);
         }
     }
+    
 }
-customElements.define("ic-context-manager", IcContextManager);
+customElements.define("ic-manager", IcManager);
 
 
-class IcContextInfo extends HTMLElement {
-    constructor() {
+class IcManagerControl extends HTMLElement {
+    constructor(manager) {
         super();
-        // this.icContexts = contexts;
+        this.icManager = manager;
+        this.icAction = "manage";
     }
+
     connectedCallback() {
-        const div = document.createElement("div");
-        div.classList.add("heading");
-        const heading = document.createElement("h1");
-        heading.innerHTML = `${capitalizeString(CONTEXT)}`;
-        div.appendChild(heading);
-        this.appendChild(div);
-        const subtitle = document.createElement("p");
-        subtitle.innerHTML = DESCRIPTION;
-        this.appendChild(subtitle);
-        const openEditorControl = new IcContextControl(CONTEXT, "openEditor", "&#9997;");
-        icContextManager.icContextEditorControl = openEditorControl;
-        div.appendChild(openEditorControl);
+
+        this.innerHTML = "&#9997; Manage";
+        this.addEventListener("click", (event) => {
+            event.stopPropagation();
+            this.icManager.classList.add("display-none");
+            this.icManager.icOverview.appendChild(new IcManagerForm(this.icManager.icOverview));
+            this.icManager.icOverview.querySelector("input").focus();
+        });
     }
 }
-customElements.define("ic-context-info", IcContextInfo);
+customElements.define("ic-manager-control", IcManagerControl);
 
 
-class IcContextEditor extends HTMLElement {
-    constructor() {
+class IcManagerForm extends HTMLElement {
+    constructor(overview) {
         super();
-        icContextManager.icContextEditor = this;
+        this.icOverview = overview;
     }
+
     connectedCallback() {
-        const heading = document.createElement("h3");
-        heading.innerHTML = "&#9997; Edit context";
-        this.appendChild(heading);
-        icContextManager.icContextEditorFields = new Object();
-        const spex = [
-            {
-                "tag": "input",
-                "id": "name",
-                "label": "Name",
-                "value": CONTEXT
-            },
-            {
-                "tag": "textarea",
-                "id": "description",
-                "label": "Description",
-                "value": DESCRIPTION
-            },
-            {
-                "tag": "textarea",
-                "id": "systems",
-                "label": "Systems",
-                "value": Object.keys(icContext.icSystems)
-            }
-        ]
+
+        this.icOverview.icManagerForm = this;
+
         const form = document.createElement("form");
+
+        const heading = document.createElement("h2");
+        heading.innerHTML = `&#9997; Manage context: ${CONTEXT}`;
+        form.appendChild(heading);
+        
+        const specs = new Array();
+        
+        specs.push(new Array());
+        specs[0].label = "Context";
+        specs[0].push({
+            "element": "input",
+            "attributes": {
+                "id": "context-name",
+                "type": "text",
+                "label": "Name",
+                "name": "contextNewName",
+                "value": CONTEXT
+            }
+        });
+        specs[0].push({
+            "element": "textarea",
+            "attributes": {
+                "id": "context-description",
+                "type": "text",
+                "label": "Description",
+                "name": "description",
+                "value": DESCRIPTION
+            }
+        });
+        specs.push(new Array());
+        specs[1].label = "Systems";
+        specs[1].push({
+            "element": "input",
+            "attributes": {
+                "id": "system-items",
+                "type": "checkbox",
+                "label": "Items",
+                "name": "items",
+                "checked": this.icOverview.icSystems.includes("items")
+            }
+        });
+        specs[1].push({
+            "element": "input",
+            "attributes": {
+                "id": "system-conversations",
+                "type": "checkbox",
+                "label": "Conversations",
+                "name": "conversations",
+                "checked": this.icOverview.icSystems.includes("conversations")
+            }
+        });
+        
+        const fields = document.createElement("div");
+        fields.classList.add("manager-form-fields");
+        for (const section of specs) {
+            const fieldSection = document.createElement("div");
+            fieldSection.classList.add("manager-field-section");
+            if (section.label) {
+                const sectionHeading = document.createElement("h3");
+                sectionHeading.innerHTML = section.label;
+                fieldSection.appendChild(sectionHeading);
+            }
+            for (const fieldSpec of section) {
+                const field = document.createElement("div");
+                field.classList.add("manager-field");
+                field.classList.add(`${fieldSpec.attributes.type}-field`);
+                if (fieldSpec.attributes.label) {
+                    const label = document.createElement("label");
+                    label.setAttribute("for", fieldSpec.attributes.id);
+                    label.innerHTML = fieldSpec.attributes.label;
+                    field.appendChild(label);
+                }
+                const input = document.createElement(fieldSpec.element);
+                if (fieldSpec.element != "textarea") input.type = fieldSpec.attributes.type;
+                if (fieldSpec.attributes.id) input.id = fieldSpec.attributes.id;
+                input.name = fieldSpec.attributes.name;
+                if (fieldSpec.attributes.value) input.value = fieldSpec.attributes.value;
+                if (fieldSpec.attributes.checked) input.checked = fieldSpec.attributes.checked;
+                field.appendChild(input);
+                fieldSection.appendChild(field);
+            }
+            fields.appendChild(fieldSection);
+        }
+
+        form.appendChild(fields);
+
+        const controlSpecs = new Array();
+        controlSpecs.push({
+            "element": "button",
+            "attributes": {
+                "type": "submit",
+                "label": "&check;",
+                "name": "submit"
+            }
+        });
+        controlSpecs.push({
+            "element": "button",
+            "attributes": {
+                "type": "button",
+                "label": "&cross;",
+                "name": "cancel"
+            }
+        });
+        const controls = document.createElement("div");
+        controls.classList.add("form-controls");
+        for (const control of controlSpecs) {
+            const input = document.createElement(control.element);
+            input.type = control.attributes.type;
+            input.innerHTML = control.attributes.label;
+            input.icSystem = this.icSystem;
+            controls.appendChild(input);
+            if (control.attributes.name == "cancel") input.addEventListener("click", () => {
+                this.icOverview.icManager.classList.remove("display-none");
+                this.icOverview.icManagerForm.remove();
+            });
+        }
+
+        form.appendChild(controls);
+       
         form.addEventListener("submit", (event) => {
             event.preventDefault();
-            const e = new Event("click");
-            icContextManager.icContextEditor.icSubmitControl.dispatchEvent(e);
+            new FormData(form);
         });
-        const div = document.createElement("div");
-        for (const spec of spex) {
-            const newField = new IcContextEditorField(spec);
-            form.appendChild(newField);
-        }
-        const controls = document.createElement("div");
-        controls.classList.add("context-controls");
-        const submit = new IcContextControl(CONTEXT, "update", "&check;");
-        this.icSubmitControl = submit;
-        submit.icContextEditorAction = "update";
-        controls.appendChild(submit);
-        const cancel = new IcContextControl(CONTEXT, "cancel", "&cross;");
-        controls.appendChild(cancel);
-        this.appendChild(form);
-        this.appendChild(controls);
-    }
-    removeSelf() {
-        icContextManager.icContextEditor = null;
-        icContextManager.icContextEditorControl.classList.toggle("primed-control");
-        this.remove();           
-    }
-}
-customElements.define("ic-context-editor", IcContextEditor);
-
-
-class IcContextEditorField extends HTMLElement {
-    constructor(spec) {
-        super();
-        this.icSpec = spec;
-    }
-    connectedCallback() {
-        const label = document.createElement("label");
-        const input = document.createElement(this.icSpec.tag);
-        input.id = this.icSpec.id;
-        label.setAttribute("for", this.icSpec.id);
-        input.value = this.icSpec.value;
-        label.innerHTML = this.icSpec.label
-        this.appendChild(label);
-        this.appendChild(input);
-        icContextManager.icContextEditorFields[input.id] = this;
-    }
-
-}
-customElements.define("ic-context-editor-field", IcContextEditorField);
-
-
-class IcContextSwitcher extends HTMLElement {
-    constructor(contexts) {
-        super();
-        this.icContexts = contexts
-    }
-    connectedCallback() {
-        const contextControls = document.createElement("div");
-        this.icContextControls = contextControls;
-        contextControls.classList.add("context-controls");
-        for (const context of this.icContexts) {
-            if (context.name != CONTEXT) {
-                const control = new IcContextControl(context.name, "switch", context.name);
-                contextControls.appendChild(control);
+        
+        form.addEventListener("formdata", (event) => {
+            
+            form.classList.add("ghost");
+            
+            this.appendChild(new IcOverviewSpinner(this.icOverview));
+            
+            const payload = new Object();
+            
+            payload["action"] = "edit";
+            payload["context"] = CONTEXT;
+            payload["data"] = new Object();
+            for (const entry of event.formData.entries()) {
+                payload["data"][entry[0]] = entry[1];
             }
-        }
-        this.appendChild(contextControls);
-    }
-    addContextControl(spec) {
-        const control = new IcContextControl(spec.context, spec.type, spec.name);
-        this.icContextControls.appendChild(control);
-    }
-    removeContextControl(context) {
-        this.icContextControls.childNodes.forEach((l) => {
-            if (l.icContext == context) l.remove();
-        });
-    }
-}
-customElements.define("ic-context-switcher", IcContextSwitcher);
+            console.log(payload);
+            // Data validation
+            if (payload.data.contextNewName && payload.data.description) {
 
-
-class IcContextControl extends HTMLElement {
-    constructor(context, type, name) {
-        super();
-        this.icContext = context;
-        this.icContextControlType = type;
-        this.icContextControlName = capitalizeString(name);
-    }
-    connectedCallback() {
-        this.innerHTML = this.icContextControlName;
-        this.classList.add("primed-control");
-        this.addEventListener("click", icContextManager.controlClicked);
-    }
-}
-customElements.define("ic-context-control", IcContextControl);
-
-
-class IcContextForm extends HTMLElement {
-    constructor() {
-        super();
-    }
-    connectedCallback() {
-        const form = document.createElement("form");
-        const input = document.createElement("input");
-        input.autofocus = true;
-        input.placeholder = "New context";
-        this.icInput = input;
-        form.appendChild(input);
-        const textarea = document.createElement("textarea");
-        this.icTextarea = textarea;
-        form.appendChild(textarea);
-        const submit = document.createElement("button");
-        submit.type = "submit";
-        submit.innerHTML = "&check;";
-        form.appendChild(submit);
-        const cancel = document.createElement("button");
-        cancel.type = "button";
-        cancel.innerHTML = "&cross;";
-        cancel.addEventListener("click", (event) => {
-            event.stopPropagation();
-            if (input.value.length == 0) {
-                this.remove();
+                // this.icOverview.sendRequest(payload);
             }
             else {
-                input.value = "";
+
+                alert("invalid request.");
+                this.icOverview.removeManagerForm();
             }
-        });
-        form.appendChild(cancel);
-        form.addEventListener("submit", (event) => {
-            event.preventDefault();
-            icContextManager.createNewContext(this);
         });
         this.appendChild(form);
     }
 }
-customElements.define("ic-context-form", IcContextForm);
+customElements.define("ic-manager-form", IcManagerForm);
+
+
+// // This to be deleted.
+// class IcOverviewControl extends HTMLElement {
+    
+//     constructor(action, name, context, overview) {
+        
+//         super();
+        
+//         this.icAction = action;
+//         this.icName = name;
+//         this.icContext = context;
+//         this.icOverview = overview
+//     }
+    
+//     connectedCallback() {
+        
+//         this.innerHTML = this.icName;
+//         this.classList.add("primed-control");
+//         this.addEventListener("click", function(event) {
+            
+//             event.stopPropagation
+//             const payload = new Object();
+//             payload.action = this.icAction;
+//             payload.context = this.icContext;
+//             this.icOverview.sendRequest(payload);
+
+
+            
+//             // const editorFields = icContextManager.icContextEditorFields;
+            
+//             switch (this.icAction) {
+        
+//                 case "switch":
+//                     window.location = `/${this.icName}`;
+//                     break;
+                
+//                 case "create": {
+                
+//                     const payload = new Object();
+//                     payload.action = "create";
+//                     this.sendRequest(payload);
+//                     break;
+//                 }
+                
+//                 case "delete": {
+                
+//                     const payload = new Object();
+//                     payload.action = "delete";
+//                     payload.context = CONTEXT;
+//                     this.sendRequest(payload);
+//                     break;
+//                 }
+                
+//                 case "openEditor":
+//                     icContextManager.icContextInfo.remove();
+//                     const icContextEditor = new IcContextEditor();
+//                     icContextManager.prepend(icContextEditor);
+//                     break;
+//                 case "update":{
+//                     this.icContextSwitcher.remove();
+//                     const payload = new Object();
+//                     payload.action = this.icContextEditorAction;
+//                     payload.context = CONTEXT;
+//                     const values = new Object();
+//                     values.name = editorFields.name.childNodes[1].value;
+//                     values.description = editorFields.description.childNodes[1].value;
+//                     values.systems = editorFields.systems.childNodes[1].value;
+//                     payload.values = values;
+//                     icContextManager.sendClientRequest(payload);
+//                     icContextManager.icContextEditor.remove();
+//                     icContextManager.icContextEditor = null;
+//                     break;
+//                 }
+                
+//                 case "cancel":
+//                     icContextManager.icContextEditor.remove();
+//                     icContextManager.icContextEditor = null;
+//                     const newContextInfo = new IcContextInfo();
+//                     icContextManager.prepend(newContextInfo);
+//                     icContextManager.icContextInfo = newContextInfo;
+//                     break;
+//                 default:
+//                     console.error("Unexpected switch statement fall-through.");
+//             }
+//             if (editorFields) icContextManager.icContextEditorFields = null;
+//         });
+//     }
+
+//     controlClicked(event) {
+//     }
+
+// }
+// customElements.define("ic-overview-control", IcOverviewControl);
+
+
+
+
+
+
+
+
+// class IcContextManager extends HTMLElement {
+//     constructor() {
+//         super();
+//     }
+//     async connectedCallback() {
+//         const resource = `/api/contexts?withSystems=${CONTEXT}`;
+//         try {
+//             const response = await fetch(resource);
+//             if(!response.ok) {
+//                 throw new Error(`HTTP error: ${response.status}`);
+//             }
+//             const json = await response.json();
+//             const contextSwitcher = new IcContextSwitcher(json.contexts);
+//             this.icContextSwitcher = contextSwitcher;
+//             this.appendChild(contextSwitcher);
+//             const contextInfo = new IcContextInfo();
+//             this.icContextInfo = contextInfo;
+//             this.appendChild(contextInfo);
+//         } catch (error) {
+//             console.error(`Fetch problem: ${error.message}`);
+//         }
+//     }
+    
+// }
+// customElements.define("ic-context-manager", IcContextManager);
+
+
+// class IcContextInfo extends HTMLElement {
+//     constructor() {
+//         super();
+//         // this.icContexts = contexts;
+//     }
+//     connectedCallback() {
+//         const div = document.createElement("div");
+//         div.classList.add("heading");
+//         const heading = document.createElement("h1");
+//         heading.innerHTML = `${capitalizeString(CONTEXT)}`;
+//         div.appendChild(heading);
+//         this.appendChild(div);
+//         const subtitle = document.createElement("p");
+//         subtitle.innerHTML = DESCRIPTION;
+//         this.appendChild(subtitle);
+//         const openEditorControl = new IcContextControl(CONTEXT, "openEditor", "&#9997;");
+//         icContextManager.icContextEditorControl = openEditorControl;
+//         div.appendChild(openEditorControl);
+//     }
+// }
+// customElements.define("ic-context-info", IcContextInfo);
+
+
+// class IcContextEditor extends HTMLElement {
+//     constructor() {
+//         super();
+//         icContextManager.icContextEditor = this;
+//     }
+//     connectedCallback() {
+//         const heading = document.createElement("h3");
+//         heading.innerHTML = "&#9997; Edit context";
+//         this.appendChild(heading);
+//         icContextManager.icContextEditorFields = new Object();
+//         const spex = [
+//             {
+//                 "tag": "input",
+//                 "id": "name",
+//                 "label": "Name",
+//                 "value": CONTEXT
+//             },
+//             {
+//                 "tag": "textarea",
+//                 "id": "description",
+//                 "label": "Description",
+//                 "value": DESCRIPTION
+//             },
+//             {
+//                 "tag": "textarea",
+//                 "id": "systems",
+//                 "label": "Systems",
+//                 "value": Object.keys(icContext.icSystems)
+//             }
+//         ]
+//         const form = document.createElement("form");
+//         form.addEventListener("submit", (event) => {
+//             event.preventDefault();
+//             const e = new Event("click");
+//             icContextManager.icContextEditor.icSubmitControl.dispatchEvent(e);
+//         });
+//         const div = document.createElement("div");
+//         for (const spec of spex) {
+//             const newField = new IcContextEditorField(spec);
+//             form.appendChild(newField);
+//         }
+//         const controls = document.createElement("div");
+//         controls.classList.add("context-controls");
+//         const submit = new IcContextControl(CONTEXT, "update", "&check;");
+//         this.icSubmitControl = submit;
+//         submit.icContextEditorAction = "update";
+//         controls.appendChild(submit);
+//         const cancel = new IcContextControl(CONTEXT, "cancel", "&cross;");
+//         controls.appendChild(cancel);
+//         this.appendChild(form);
+//         this.appendChild(controls);
+//     }
+//     removeSelf() {
+//         icContextManager.icContextEditor = null;
+//         icContextManager.icContextEditorControl.classList.toggle("primed-control");
+//         this.remove();           
+//     }
+// }
+// customElements.define("ic-context-editor", IcContextEditor);
+
+
+// class IcContextEditorField extends HTMLElement {
+//     constructor(spec) {
+//         super();
+//         this.icSpec = spec;
+//     }
+//     connectedCallback() {
+//         const label = document.createElement("label");
+//         const input = document.createElement(this.icSpec.tag);
+//         input.id = this.icSpec.id;
+//         label.setAttribute("for", this.icSpec.id);
+//         input.value = this.icSpec.value;
+//         label.innerHTML = this.icSpec.label
+//         this.appendChild(label);
+//         this.appendChild(input);
+//         icContextManager.icContextEditorFields[input.id] = this;
+//     }
+
+// }
+// customElements.define("ic-context-editor-field", IcContextEditorField);
+
+
+// class IcContextForm extends HTMLElement {
+//     constructor() {
+//         super();
+//     }
+//     connectedCallback() {
+//         const form = document.createElement("form");
+//         const input = document.createElement("input");
+//         input.autofocus = true;
+//         input.placeholder = "New context";
+//         this.icInput = input;
+//         form.appendChild(input);
+//         const textarea = document.createElement("textarea");
+//         this.icTextarea = textarea;
+//         form.appendChild(textarea);
+//         const submit = document.createElement("button");
+//         submit.type = "submit";
+//         submit.innerHTML = "&check;";
+//         form.appendChild(submit);
+//         const cancel = document.createElement("button");
+//         cancel.type = "button";
+//         cancel.innerHTML = "&cross;";
+//         cancel.addEventListener("click", (event) => {
+//             event.stopPropagation();
+//             if (input.value.length == 0) {
+//                 this.remove();
+//             }
+//             else {
+//                 input.value = "";
+//             }
+//         });
+//         form.appendChild(cancel);
+//         form.addEventListener("submit", (event) => {
+//             event.preventDefault();
+//             icContextManager.createNewContext(this);
+//         });
+//         this.appendChild(form);
+//     }
+// }
+// customElements.define("ic-context-form", IcContextForm);
 
 
 class IcContext extends HTMLElement {
@@ -357,8 +773,8 @@ class IcContext extends HTMLElement {
         super();
     }
     connectedCallback() {
-        this.icContext = CONTEXT;
-        this.icContextDescription = DESCRIPTION;
+        this.icName = CONTEXT;
+        this.icDescription = DESCRIPTION;
         this.mdConverter = new showdown.Converter({
             tables: true,
             tasklists: true
@@ -386,13 +802,13 @@ class IcContext extends HTMLElement {
             for (const system of systems) {
                 switch (system.name) {
                     case "conversations":
-                        icContext.childNodes[0].appendChild(new IcSystem(system))
+                        this.childNodes[0].appendChild(new IcSystem(this, system))
                         break;
                     default:
-                        icContext.childNodes[1].appendChild(new IcSystem(system));
+                        this.childNodes[1].appendChild(new IcSystem(this, system));
                 }
             }
-            icContext.childNodes.forEach((l) => {
+            this.childNodes.forEach((l) => {
                 if (l.childElementCount == 0) l.remove();
             });
         } catch (error) {
@@ -405,8 +821,9 @@ customElements.define("ic-context", IcContext);
 
 class IcSystem extends HTMLElement {
     
-    constructor(system) {
+    constructor(context, system) {
         super();
+        this.icContext = context;
         this.icName = system.name;
         this.icItemDisplay = null;
         this.icControlDisplay = null;
@@ -420,7 +837,7 @@ class IcSystem extends HTMLElement {
 
     connectedCallback() {
         
-        icContext.icSystems[this.icName] = this;
+        this.icContext.icSystems[this.icName] = this;
         
         this.classList.add(this.icName);
         
@@ -947,6 +1364,22 @@ class IcSystem extends HTMLElement {
                 console.error("Unexpected switch case fallthrough");
         }
     }
+
+    makeFilename() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+
+        let filename = `${capitalizeString(CONTEXT)}_EXPORT_ON_${year}_${month}_${day}_AT_${hours}_${minutes}_${seconds}`;
+        filename = filename.replace(/\s+/g, '_');
+        filename = filename.replace(/[<>:"/\\|?*\x00-\x1F]/g, '');
+        filename = filename.trim();
+        return filename;
+    }
 }
 customElements.define("ic-system", IcSystem);
 
@@ -973,7 +1406,7 @@ class IcItem extends HTMLElement {
             const nameContainer = document.createElement("div");
             this.nameContainer = nameContainer;
             nameContainer.classList.add("name");
-            nameContainer.innerHTML = icContext.mdConverter.makeHtml(this.icName);
+            nameContainer.innerHTML = this.icSystem.icContext.mdConverter.makeHtml(this.icName);
             this.appendChild(nameContainer);
             
             const icDetailDisplay = document.createElement("div");
@@ -1079,7 +1512,7 @@ class IcDetail extends HTMLElement {
         const roleClass = `${this.icRole}-role`;
         this.classList.add(roleClass);
         
-        this.innerHTML = icContext.mdConverter.makeHtml(this.icContent);
+        this.innerHTML = this.icSystem.icContext.mdConverter.makeHtml(this.icContent);
         
         this.addEventListener("click", this.detailClicked);
 
@@ -1435,7 +1868,7 @@ class IcForm extends HTMLElement {
                                 "type": "text",
                                 "label": "File name",
                                 "name": "name",
-                                "value": icContextOwner.makeFilename()
+                                "value": this.icSystem.makeFilename()
                             }
                         });
                         break;
@@ -1908,6 +2341,24 @@ class IcSpinner extends HTMLElement {
     }
 }
 customElements.define("ic-spinner", IcSpinner);
+
+
+class IcOverviewSpinner extends HTMLElement {
+    constructor(overview) {
+        super();
+        this.icOverview = overview;
+    }
+    connectedCallback() {
+        this.icOverview.icSpinner = this;
+        const bar = document.createElement("div");
+        bar.classList.add("spinner");
+        this.appendChild(bar);
+    }
+    disconnectedCallback() {
+        this.icOverview.icSpinner = null;
+    }
+}
+customElements.define("ic-overview-spinner", IcOverviewSpinner);
 
 
 main();
