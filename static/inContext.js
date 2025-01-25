@@ -1582,8 +1582,8 @@ class IcControl extends HTMLElement {
     controlClicked() {
         if (this.icPrimed) {
             this.icSystem.icControlDisplay.appendChild(new IcForm(this.icAction, this.icSystem));
-            const input = this.icSystem.querySelector("input")
-            if (input && input.type != "hidden") {
+            const input = this.icSystem.querySelector('input[type="text"]');  // must be text type input otherwise tasks in markdown get detected.
+            if (input) {
                 input.focus();
             }
             else {
