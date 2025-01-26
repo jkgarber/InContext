@@ -25,15 +25,38 @@ from flask import Flask, render_template, jsonify, request, redirect, session
 app = Flask(__name__)
 
 
-#-- OpenAI text generation ------------------------------------------------------------------------
+#-- LLM chat function ------------------------------------------------------------------------
 
 import openai
+import anthropic
 import os
 import json
 openai_client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"),)
-gpt_model = 'gpt-4o-mini'
-def chat_gpt(conversation_history, user_content, item_list, context):
-    if context == 'Testing':
+anthropic_client = anthropic.Anthropic()
+openai_llm = 'gpt-4o-mini'
+anthropic_llm = 'claude-3-5-haiku-20241022'
+def llm_chat(conversation_history, user_content, item_list, context):
+    if context == 'Development':
+        system = f"Assume the role of a full stack web developer specialising in Python-Flask, SQLite, and vanilla JS, HTML, and CSS. Your purpose is to assist the user with coding tasks."
+        intro = [
+            {
+                "role":"user",
+                "content": f"I'm developing an LLM wrapper app because he wants to work with LLMs in a customized way. The content you are about to receive contains the current code files, which is inputted by {user_name} via the app's UI. (You are communicating with {user_name} via the wrapper.) File contents: {item_list}"
+            }
+        ]
+        messages = intro + conversation_history + [{"role":"user", "content": user_content}]
+        try:
+            message = anthropic_client.messages.create(
+                model=anthropic_llm,
+                system=system,
+                messages=messages,
+                max_tokens=1024,
+            )
+            print(message.content[0].text)
+            return message.content[0].text
+        except Exception as e:
+            return f"Error: {str(e)}"
+    elif context == 'Testing':
         memory = f"The user's name is {user_name}. He is developing a ChatGPT wrapper because he wants to work with AI more independently and in his own way. You are communicating with {user_name} via the wrapper. This conversation is part of a testing routine for the app's development. The list of items you are about to receive contains test data, which is managed by {user_name} via the app's UI. Items: {item_list}"
     else:
         memory = f"The user's name is {user_name}, and he has a list of items and each item has a set of details. You are receiving this list of items in preparation for the conversation with {user_name}. {user_name} uses this list of items to organize his thoughts and prioritize his efforts. {user_name} wants you to take the list of items into account when formulating your response. Here's some more information about the items. The items are listed in order of priority. The details of each item are ordered by date added (oldest to newest). Note that details are optional, so it's possible that the list of details for an item will be empty. Note that the content itself is written in Markdown. Now, you should know, {user_name} developed a ChatGPT wrapper because he wants to work with AI more independently and in his own way. The wrapper app is called 'InContext'. You are communicating with {user_name} via inContext. {user_name} manages the items, their details and their priority level via the InContext UI, which also displays this conversation. {user_name} might update the items during the conversation and you're receiving the most up-to-date version of the item list in this system message. So, if {user_name} updates the list during the conversation, you'll see a previous version of the list in the conversation history, which follows this system message. Good luck. Make sure you take into account the most up-to-date version of the item list in your response. {item_list}"
@@ -41,7 +64,7 @@ def chat_gpt(conversation_history, user_content, item_list, context):
         system_message = {"role": "system", "content": f"Assume the role of a helpful assistant. Use this information to help the user: {memory}"}
         messages = [system_message] + conversation_history + [{"role":"user", "content": user_content}]
         response = openai_client.chat.completions.create(
-            model=gpt_model,
+            model=openai_llm,
             messages=messages,
         )
         return response.choices[0].message.content
@@ -935,7 +958,7 @@ def create_message(json):
         # generate conversation history
         res = cur.execute("SELECT role, content FROM details WHERE item_id = ? AND rank NOT NULL ORDER BY rank", (json['data']['id'],))
         conversation_history = res.fetchall()
-        completion = chat_gpt(conversation_history, json['data']['content'], av_package, json['context'])
+        completion = llm_chat(conversation_history, json['data']['content'], av_package, json['context'])
         # insert chat completion to db
         rank += 1
         cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], 'assistant', completion, rank,))
