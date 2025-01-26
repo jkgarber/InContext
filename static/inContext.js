@@ -115,7 +115,7 @@ class IcOverview extends HTMLElement {
             
             case "create": {
     
-                window.location = `/${json.response.newContext}`;
+                window.location = `/${json.newContext}`;
                 break;
             }
             
