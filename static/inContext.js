@@ -1,3 +1,5 @@
+let icContext;
+
 function main() {
     
     document.title = `inContext/${CONTEXT}`;
@@ -5,7 +7,7 @@ function main() {
     const icOverview = new IcOverview();
     document.body.appendChild(icOverview);
 
-    const icContext = new IcContext();
+    icContext = new IcContext();
     document.body.appendChild(icContext);   
 }
 
