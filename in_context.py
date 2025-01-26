@@ -894,11 +894,11 @@ def contexts():
                 con = sqlite3.connect(db)
                 con.row_factory = dict_factory
                 cur = con.cursor()
-                res = cur.execute("DELETE FROM contexts WHERE name = ?", (request.json['context'],))
+                res = cur.execute("DELETE FROM contexts WHERE name = ?", (request.json['data']['context'],))
                 con.commit()
                 cur.close()
                 con.close()
-                api_response = jsonify(dict(deletedContext=request.json['context']))
+                api_response = jsonify(dict(deletedContext=request.json['data']['context']))
                 return api_response
             except Exception as error:
                 print(error)
