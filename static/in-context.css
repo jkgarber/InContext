@@ -310,7 +310,8 @@ ic-detail > *:last-child {
 ic-detail code, ic-item code {
     color: var(--lightaccent);
     padding: 0 3px;
-    text-wrap-mode: nowrap;
+    /* text-wrap-mode: nowrap; */
+    text-wrap-mode: wrap;
     background-color: var(--primary);
 }
 
@@ -335,7 +336,7 @@ ic-system.conversations ic-detail.user-role {
 }
 
 ic-detail ul, ic-detail ol, ic-item ul, ic-item ol {
-    margin-left: 40px;
+    margin-left: 5%;
 }
 
 .ic-control-display {
