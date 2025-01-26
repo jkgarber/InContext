@@ -863,18 +863,21 @@ def contexts():
                 con = sqlite3.connect(db)
                 # con.row_factory = dict_factory
                 cur = con.cursor()
-                res = cur.execute("UPDATE contexts SET name = ?, description = ? WHERE name = ?", (request.json['values']['name'], request.json['values']['description'], request.json['context'],))
-                res = cur.execute("UPDATE items set context = ? where context = ?", (request.json['values']['name'], request.json['context'],))
-                # res = cur.execute("INSERT INTO contexts(name, description) VALUES(?, ?)", (request.json['values']['name'], request.json['values']['description'],))
-                res = cur.execute("DELETE FROM systems WHERE context = ?", (request.json['context'],))
-                print(len(request.json['values']['systems']))
-                if len(request.json['values']['systems']) > 0:
-                    data = []
-                    systems = request.json['values']['systems'].split(',')
-                    for system in systems:
-                        datum = (system, request.json['values']['name'])
-                        data.append(datum)
-                    res = cur.executemany("INSERT INTO systems(name, context) VALUES(?, ?)", data)
+                cur.execute("UPDATE contexts SET name = ?, description = ? WHERE name = ?", (request.json['data']['contextNewName'], request.json['data']['description'], request.json['context'],))
+                cur.execute("UPDATE items set context = ? where context = ?", (request.json['data']['contextNewName'], request.json['context'],))
+                cur.execute("DELETE FROM systems WHERE context = ?", (request.json['context'],))
+                # print(len(request.json['values']['systems']))
+                if 'items' in request.json['data']:
+                    cur.execute("INSERT INTO systems(name, context) VALUES('items', ?)", (request.json['data']['contextNewName'],))
+                if 'conversations' in request.json['data']:
+                    cur.execute("INSERT INTO systems(name, context) VALUES('conversations', ?)", (request.json['data']['contextNewName'],))
+                # if len(request.json['values']['systems']) > 0:
+                #     data = []
+                #     systems = request.json['values']['systems'].split(',')
+                #     for system in systems:
+                #         datum = (system, request.json['values']['name'])
+                #         data.append(datum)
+                #     res = cur.executemany("INSERT INTO systems(name, context) VALUES(?, ?)", data)
                     # res = cur.execute("SELECT name, context FROM systems WHERE name = ?", request.json['values']['systems'])
                     # inner_systems = res.fetchall()
                     # for datum in data:
@@ -883,7 +886,7 @@ def contexts():
                 con.commit()
                 cur.close()
                 con.close()
-                api_response = jsonify(dict(context=request.json['values']['name'], description=request.json['values']['description']))
+                api_response = jsonify(dict(context=request.json['data']['contextNewName'], description=request.json['data']['description']))
                 return api_response
             except Exception as error:
                 print(error)

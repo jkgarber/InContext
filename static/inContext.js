@@ -473,7 +473,7 @@ class IcManagerForm extends HTMLElement {
             
             const payload = new Object();
             
-            payload["action"] = "edit";
+            payload["action"] = "update";
             payload["context"] = CONTEXT;
             payload["data"] = new Object();
             for (const entry of event.formData.entries()) {
@@ -482,8 +482,7 @@ class IcManagerForm extends HTMLElement {
             console.log(payload);
             // Data validation
             if (payload.data.contextNewName && payload.data.description) {
-
-                // this.icOverview.sendRequest(payload);
+                this.icOverview.sendRequest(payload);
             }
             else {
 
