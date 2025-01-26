@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block body %}
+<script>let CONTEXT = `{{ context|safe }}`;</script>
+<script>let DESCRIPTION = `{{ description|safe }}`;</script>
+<script src="static/inContext.js" defer></script>
+
+<!-- 
+This project uses ShowdownJS - A bidirectional Markdown to HTML converter
+
+ShowdownJS: https://github.com/showdownjs/showdown
+License: MIT (https://opensource.org/licenses/MIT)
+Version: 2.1.0
+Copyright (c) 2018,2021 ShowdownJS
+-->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js" integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+{% endblock %}

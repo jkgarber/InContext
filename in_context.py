@@ -21,7 +21,7 @@ def dict_factory(cursor, row):
 
 #-- Flask app -------------------------------------------------------------------------------------
 
-from flask import Flask, render_template, jsonify, request, redirect
+from flask import Flask, render_template, jsonify, request, redirect, session
 app = Flask(__name__)
 
 
@@ -56,6 +56,7 @@ try:
     cur = con.cursor()
     cur.executescript("""
         BEGIN;
+        CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, hash TEXT);
         CREATE TABLE IF NOT EXISTS contexts (name TEXT, description TEXT);
         CREATE TABLE IF NOT EXISTS systems (name TEXT, context TEXT, FOREIGN KEY(context) REFERENCES contexts(name));
         CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, rank INTEGER, context TEXT, system TEXT, FOREIGN KEY(context) REFERENCES contexts(name), FOREIGN KEY(system) REFERENCES systems(name));
@@ -90,7 +91,34 @@ try:
     con.close()
 except Exception as e:
     print(f"Error: {str(e)}")
-    exit(1)
+    exit(2)
+
+
+#-- Login/Users -----------------------------------------------------------------------------------
+
+from flask_session import Session
+from werkzeug.security import check_password_hash, generate_password_hash
+from functools import wraps
+
+# Configure session to use filesystem (instead of signed cookies)
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
+
+
+def login_required(f):
+    """
+    Decorate routes to require login.
+
+    https://flask.palletsprojects.com/en/latest/patterns/viewdecorators/
+    """
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get("user_id") is None:
+            return redirect("/login")
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 @app.after_request
@@ -102,13 +130,101 @@ def after_request(response):
     return response
 
 
+#-- Layout Routes ------------------------------------------------------------------------------------
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Log user in"""
+
+    # Forget any user_id
+    session.clear()
+
+    # User reached route via POST (as by submitting a form via POST)
+    if request.method == "POST":
+        # Ensure username was submitted
+        if not request.json['username']:
+            return jsonify(dict(message='must provide username')), 403
+
+        # Ensure password was submitted
+        elif not request.json['password']:
+            return jsonify(dict(message='must provide password')), 403
+
+        # Query database for username
+        con = sqlite3.connect(db)
+        con.row_factory = dict_factory
+        cur = con.cursor()
+        res = cur.execute('SELECT * FROM users WHERE name = ?', (request.json['username'],))
+        rows = res.fetchall()
+        cur.close()
+        con.close()
+
+        # Ensure username exists and password is correct
+        if len(rows) != 1 or not check_password_hash(
+            rows[0]["hash"], request.json['password']
+        ):
+            return jsonify(dict(message='invalid username and/or password')), 403
+        
+        # Remember which user has logged in
+        session["user_id"] = rows[0]['id']
+
+        # Redirect user to home page
+        return jsonify(dict(message="ok")), 200
+
+    # User reached route via GET (as by clicking a link or via redirect)
+    else:
+        return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    """Log user out"""
+    session.clear()
+    return redirect("/")
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    """Register user"""
+    if request.method == "POST":
+        if not request.json['username']:
+            return jsonify(dict(message='must provide username')), 403
+        if not request.json['password']:
+            return jsonify(dict(message='must provide password')), 403
+        if not request.json['confirmation']:
+            return jsonify(dict(message='must provide password')), 400
+        password = request.json['password']
+        confirmation = request.json['confirmation']
+
+        if password != confirmation:
+            return jsonify(dict(message="Password and confirmation don't match")), 400
+
+        # Add the user to the user table
+        username = request.json['username']
+        try:
+            con = sqlite3.connect(db)
+            cur = con.cursor()
+            cur.execute("INSERT INTO users (name, hash) VALUES(?, ?)", (username, generate_password_hash(password),))
+            con.commit()
+            cur.close()
+            con.close()
+        except ValueError:
+            return jsonify(dict(message='Username already exists')), 400
+        return jsonify(dict(message="ok")), 200
+
+    # User reached route via GET (as by clicking a link or via redirect)
+    else:
+        return render_template("register.html")
+
+
 @app.route("/")
+@login_required
 def root():
     server_response = redirect("/Testing")
     return server_response, 301
 
 
 @app.route("/<context>")
+@login_required
 def context(context):
     con = sqlite3.connect(db)
     cur = con.cursor()
@@ -118,13 +234,16 @@ def context(context):
     con.close()
     if context in [c[0] for c in contexts]:
         description = [c[1] for c in contexts if c[0] == context][0]
-        server_response = render_template("layout.html", context=context, description=description)
+        server_response = render_template("context.html", context=context, description=description)
         return server_response, 200
     else:
         return "not a context", 400 
 
 
+#-- API routes ------------------------------------------------------------------------------------
+
 @app.route("/api/systems")
+@login_required
 def systems():
     context = request.args.get('context')
     con = sqlite3.connect(db)
@@ -139,6 +258,7 @@ def systems():
 
 
 @app.route("/api/items", methods=["GET", "POST"])
+@login_required
 def api_items():
     if request.method == "GET":
         context = request.args.get('context')
@@ -159,6 +279,7 @@ def api_items():
 
 
 @app.route('/api/operations', methods=['POST'])
+@login_required
 def api_operations():
     with open("operation_log", "a") as outfile:
         log_info = dict()
@@ -831,6 +952,7 @@ def create_message(json):
 
 
 @app.route('/api/contexts', methods=['GET', 'POST'])
+@login_required
 def contexts():
     """ Performs database operations on the contexts table and returns data to the FE if needed. """
     if request.method == 'GET':

@@ -15,7 +15,9 @@ The result: more useful responses and faster conversations.
 - `source .venv/bin/activate`
 - `pip install --upgrade pip`
 - `pip install openai`
+- `pip install anthropic`
 - `pip install flask`
+- `pip install flask-session`
 - `git clone git@github.com:jkgarber/InContext.git`
 - `python3 inContext.py <user_name>`
 

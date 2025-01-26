@@ -532,4 +532,37 @@ ic-form .hidden-field {
         justify-content: end;
     }
 }
-  
+
+login-heading, register-heading {
+    width: 400px;
+    margin: 30% auto 20px;
+    color: var(--textcolor);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+}
+
+login-form, register-form {
+    margin: 0 auto;
+}
+
+login-form form, register-form form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+register-link, login-link {
+    margin: 0 auto;
+}
+
+register-link a, login-link a {
+    color: var(--textcolor);
+    text-decoration: none;
+}
+
+register-link a:hover, login-link a:hover {
+    /* color: var(--textcolor); */
+    text-decoration: underline;
+}
