@@ -2295,9 +2295,26 @@ class IcForm extends HTMLElement {
             input.innerHTML = control.attributes.label;
             input.icSystem = this.icSystem;
             controls.appendChild(input);
-            if (control.attributes.name == "cancel") input.addEventListener("click", () => {
-                this.icSystem.removeForm();
-            });
+            if (control.attributes.name == "cancel") {
+                input.addEventListener("click", () => {
+                    const formFields = this.querySelector('.form-fields');
+                    const inputElements = formFields.querySelectorAll('input[type="text"], textarea');
+    
+                    // Check if any input field is non-empty
+                    const hasContent = Array.from(inputElements).some(element => element.value !== '');
+    
+                    if (hasContent) {
+                        // If any field has content, clear all fields
+                        inputElements.forEach(element => {
+                            element.value = '';
+                            element.focus()
+                        });
+                    } else {
+                        // If all fields are empty, remove the form
+                        this.icSystem.removeForm();
+                    }
+                });
+            }
         }
         return controls;
     }
