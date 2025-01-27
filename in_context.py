@@ -52,7 +52,6 @@ def llm_chat(conversation_history, user_content, item_list, context):
                 messages=messages,
                 max_tokens=1024,
             )
-            print(message.content[0].text)
             return message.content[0].text
         except Exception as e:
             return f"Error: {str(e)}"

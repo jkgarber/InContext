@@ -1166,7 +1166,20 @@ class IcSystem extends HTMLElement {
             case "createItem":
                 if (["items", "conversations"].includes(this.icName)) {
                     const len = this.icItems.length;
-                    this.icItems[len - 1].icId = data.id;
+                    const newItem = this.icItems[len - 1];
+                    newItem.icId = data.id;
+    
+                    // Check if auto-scroll is enabled (default true)
+                    const autoScrollCheckbox = this.querySelector('input[name="autoScroll"]');
+                    const shouldAutoScroll = autoScrollCheckbox ? autoScrollCheckbox.checked : true;
+    
+                    if (shouldAutoScroll) {
+                        // Scroll the new item into view
+                        newItem.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center' 
+                        });
+                    }
                 }
                 break;
             case "importItems":
@@ -1816,6 +1829,17 @@ class IcForm extends HTMLElement {
                                 "name": "name"
                             }
                         });
+                        specs.push(new Array());
+                        specs[1].push({
+                            "element": "input",
+                            "attributes": {
+                                "id": "auto-scroll",
+                                "type": "checkbox",
+                                "label": "Scroll item into view",
+                                "name": "autoScroll",
+                                "checked": true,  // Default to checked
+                            }
+                        });
                         break;
                     }
                     case "conversations": {
@@ -2234,6 +2258,9 @@ class IcForm extends HTMLElement {
                 if (fieldSpec.attributes.id) input.id = fieldSpec.attributes.id;
                 input.name = fieldSpec.attributes.name;
                 if (fieldSpec.attributes.value) input.value = fieldSpec.attributes.value;
+                if (fieldSpec.attributes.checked) {
+                    input.checked = true;
+                }
                 field.appendChild(input);
                 fieldSection.appendChild(field);
             }

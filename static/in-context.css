@@ -418,6 +418,21 @@ ic-form .field {
     width: 100%;
 }
 
+ic-form .field.checkbox-field {
+    display: flex;
+    flex-direction: row-reverse;  /* This puts the checkbox to the left of the label */
+    justify-content: center;    /* Aligns items to the right */
+    align-items: center;
+    gap: 5px;                     /* Adds a small gap between checkbox and label */
+    width: 100%;
+    max-width: 500px;
+}
+
+ic-form .field.checkbox-field input[type="checkbox"] {
+    cursor: pointer;    /* Makes the cursor a pointer when hovering over checkbox */
+    width: fit-content;
+}
+
 ic-form .form-controls {
     display: flex;
     flex-direction: row;
