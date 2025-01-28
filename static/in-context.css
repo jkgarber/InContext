@@ -40,10 +40,10 @@ ic-overview {
 
 ic-overview .top {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
     justify-content: space-between;
-    align-items: center;
+    /* align-items: center; */
+    gap: inherit;
 }
 
 ic-switcher {
@@ -60,6 +60,7 @@ ic-switch, ic-owner-control, ic-manager-control {
     border: 1px solid var(--tertiary);
     cursor: pointer;
     width: fit-content;
+    text-align: center;
 }
 
 ic-switch {
@@ -87,6 +88,7 @@ ic-owner {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 10px;
+    justify-content: flex-end;
 }
 
 ic-manager {
