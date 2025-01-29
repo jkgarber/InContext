@@ -430,7 +430,15 @@ ic-form .field.checkbox-field {
     max-width: 500px;
 }
 
-ic-form .field.checkbox-field input[type="checkbox"] {
+ic-form .field.radio-field {
+    display: flex;
+    flex-direction: row-reverse;  /* This puts the checkbox to the left of the label */
+    justify-content: start;
+    align-items: center;
+    gap: 5px;
+}
+
+ic-form .field.checkbox-field input[type="checkbox"], ic-form .field.radio-field input[type="radio"] {
     cursor: pointer;    /* Makes the cursor a pointer when hovering over checkbox */
     width: fit-content;
 }

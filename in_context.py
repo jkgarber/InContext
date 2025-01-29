@@ -334,6 +334,8 @@ def conduct_operation(json):
                     return create_item(json)
                 case 'conversations':
                     return create_conversation(json)
+                case 'developers':
+                    return create_developer(json)
                 case _:
                     return unsupported_operation(json)
         case 'importItems':
@@ -362,6 +364,8 @@ def conduct_operation(json):
                     return create_detail(json)
                 case 'conversations':
                     return create_message(json)
+                case 'developers':
+                    return create_developer_message(json)
                 case _:
                     return unsupported_operation(json)
         case 'nullifyItem':
@@ -432,7 +436,7 @@ def unsuccessful_operation(json):
 
 
 def unsupported_operation(json):
-    return {'valid': False, 'advice': f'The operation *{json["operation"]}* is not supported by system *{json["system"]}*.'}
+    return {'valid': False, 'successful': False, 'advice': f'The operation *{json["operation"]}* is not supported by system *{json["system"]}*.'}
 
 
 def deliberate_failure():
@@ -468,6 +472,34 @@ def create_item(json):
 
 
 def create_conversation(json):
+    # return deliberate_failure() # For testing (simulated server issue).
+    operation = dict()
+    if json['data']['name']:
+        operation['valid'] = True
+    else:
+        return invalid_operation('item name')
+    try:
+        con = sqlite3.connect(db)
+        con.row_factory = dict_factory
+        cur = con.cursor()
+        res = cur.execute("SELECT COUNT(*) as count FROM items WHERE context = ? AND system = ? AND rank NOT NULL", (json['context'], json['system'],))
+        count = res.fetchone()['count']
+        rank = count + 1
+        cur.execute("INSERT INTO items(name, rank, context, system) VALUES( ?, ?, ?, ?)", (json['data']['name'], rank, json['context'], json['system'],))
+        con.commit()
+        res = cur.execute("SELECT id FROM items WHERE context = ? AND system = ? AND rank = ?", (json['context'], json['system'], rank,))
+        item_id = res.fetchone()['id']
+        cur.close()
+        con.close()
+        operation['successful'] = True
+        operation['response'] = dict(id=item_id, rank=rank)
+        return operation
+    except Exception as error:
+        print(error)
+        return unsuccessful_operation(json)
+
+
+def create_developer(json):
     # return deliberate_failure() # For testing (simulated server issue).
     operation = dict()
     if json['data']['name']:
@@ -937,12 +969,12 @@ def create_message(json):
         con.commit()
         # generate chat completion
             # Generate the package for the ai bot
-        av_package = dict()
-        av_package['items'] = list()
+        item_package = dict()
+        item_package['items'] = list()
         res = cur.execute("SELECT id, rank, name FROM items WHERE context = ? AND system = ? AND rank NOT NULL ORDER BY rank", (json['context'], 'items',))
         items = res.fetchall()
         for i, item in enumerate(items):
-            av_package['items'].append({
+            item_package['items'].append({
                 'name': item['name'],
                 'rank': item['rank'],
                 'details': list()
@@ -953,11 +985,11 @@ def create_message(json):
             details = res.fetchall()
             for detail in details:
                 # put a security check here.
-                av_package['items'][i]['details'].append(detail['content'])
+                item_package['items'][i]['details'].append(detail['content'])
         # generate conversation history
         res = cur.execute("SELECT role, content FROM details WHERE item_id = ? AND rank NOT NULL ORDER BY rank", (json['data']['id'],))
         conversation_history = res.fetchall()
-        completion = llm_chat(conversation_history, json['data']['content'], av_package, json['context'])
+        completion = llm_chat(conversation_history, json['data']['content'], item_package, json['context'])
         # insert chat completion to db
         rank += 1
         cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], 'assistant', completion, rank,))
@@ -970,7 +1002,54 @@ def create_message(json):
         return operation
     except Exception as error:
         print(error)
-        return unsuccessful_operation(json)    
+        return unsuccessful_operation(json)
+
+
+def create_developer_message(json):
+    # return deliberate_failure() # For testing (simulated server issue).
+    operation = dict()
+    if json['data']['content'] and json['data']['id']:
+        operation['valid'] = True
+    else:
+        return invalid_operation('content', 'item id')
+    try:
+        con = sqlite3.connect(db)
+        con.row_factory = dict_factory
+        cur = con.cursor()
+        res = cur.execute("SELECT COUNT(*) as count FROM details WHERE item_id = ? AND rank NOT NULL", (json['data']['id'],))
+        count = res.fetchone()['count']
+        rank = count + 1
+        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], 'user', json['data']['content'], rank,))
+        con.commit()
+        item_package = dict()
+        item_package['codefiles'] = list()
+        res = cur.execute("SELECT name FROM items WHERE context = ? AND system = ? AND rank NOT NULL ORDER BY rank", (json['context'], 'codefiles',))
+        items = res.fetchall()
+        for i, item in enumerate(items):
+            item_package['items'].append({
+                'path': item['name'],
+                'contents': str()
+            })
+            # read the file contents from the os
+            # add them to the package.
+            
+        # generate conversation history
+        res = cur.execute("SELECT role, content FROM details WHERE item_id = ? AND rank NOT NULL ORDER BY rank", (json['data']['id'],))
+        conversation_history = res.fetchall()
+        completion = llm_chat(conversation_history, json['data']['content'], item_package, json['context'])
+        # insert chat completion to db
+        rank += 1
+        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], 'assistant', completion, rank,))
+        con.commit()
+        cur.close()
+        con.close()
+        # add chat completion to server response
+        operation['successful'] = True
+        operation['response'] = dict(content=completion)
+        return operation
+    except Exception as error:
+        print(error)
+        return unsuccessful_operation(json)
 
 
 @app.route('/api/contexts', methods=['GET', 'POST'])
@@ -1005,28 +1084,18 @@ def contexts():
         elif request.json['action'] == 'update':
             try:
                 con = sqlite3.connect(db)
-                # con.row_factory = dict_factory
                 cur = con.cursor()
                 cur.execute("UPDATE contexts SET name = ?, description = ? WHERE name = ?", (request.json['data']['contextNewName'], request.json['data']['description'], request.json['context'],))
                 cur.execute("UPDATE items set context = ? where context = ?", (request.json['data']['contextNewName'], request.json['context'],))
                 cur.execute("DELETE FROM systems WHERE context = ?", (request.json['context'],))
-                # print(len(request.json['values']['systems']))
                 if 'items' in request.json['data']:
                     cur.execute("INSERT INTO systems(name, context) VALUES('items', ?)", (request.json['data']['contextNewName'],))
                 if 'conversations' in request.json['data']:
                     cur.execute("INSERT INTO systems(name, context) VALUES('conversations', ?)", (request.json['data']['contextNewName'],))
-                # if len(request.json['values']['systems']) > 0:
-                #     data = []
-                #     systems = request.json['values']['systems'].split(',')
-                #     for system in systems:
-                #         datum = (system, request.json['values']['name'])
-                #         data.append(datum)
-                #     res = cur.executemany("INSERT INTO systems(name, context) VALUES(?, ?)", data)
-                    # res = cur.execute("SELECT name, context FROM systems WHERE name = ?", request.json['values']['systems'])
-                    # inner_systems = res.fetchall()
-                    # for datum in data:
-                    #     if datum not in inner_systems:
-                    #         res = cur.execute("INSERT INTO systems(name, context) VALUES(?, ?)", datum)
+                if 'developers' in request.json['data']:
+                    cur.execute("INSERT INTO systems(name, context) VALUES('developers', ?)", (request.json['data']['contextNewName'],))
+                if 'codefiles' in request.json['data']:
+                    cur.execute("INSERT INTO systems(name, context) VALUES('codefiles', ?)", (request.json['data']['contextNewName'],))
                 con.commit()
                 cur.close()
                 con.close()
@@ -1036,7 +1105,6 @@ def contexts():
                 print(error)
             return 'server error', 500
         elif request.json['action'] == 'delete':
-            # delete the context from the DB
             try:
                 con = sqlite3.connect(db)
                 con.row_factory = dict_factory

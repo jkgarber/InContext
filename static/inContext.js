@@ -160,19 +160,6 @@ class IcSwitcher extends HTMLElement {
             }
         }
     }
-    
-    // addControl(spec) {
-        
-    //     const control = new IcOverviewControl(spec.action, spec.name);
-    //     this.icControls.appendChild(control);
-    // }
-    
-    // removeControl(context) {
-    
-    //     this.icControls.childNodes.forEach((l) => {
-    //         if (l.icContext == context) l.remove();
-    //     });
-    // }
 }
 customElements.define("ic-switcher", IcSwitcher);
 
@@ -392,6 +379,26 @@ class IcManagerForm extends HTMLElement {
                 "checked": this.icOverview.icSystems.includes("conversations")
             }
         });
+        specs[1].push({
+            "element": "input",
+            "attributes": {
+                "id": "system-developers",
+                "type": "checkbox",
+                "label": "Developers",
+                "name": "developers",
+                "checked": this.icOverview.icSystems.includes("developers")
+            }
+        });
+        specs[1].push({
+            "element": "input",
+            "attributes": {
+                "id": "system-codefiles",
+                "type": "checkbox",
+                "label": "Codefiles",
+                "name": "codefiles",
+                "checked": this.icOverview.icSystems.includes("codefiles")
+            }
+        });
         
         const fields = document.createElement("div");
         fields.classList.add("manager-form-fields");
@@ -496,279 +503,6 @@ class IcManagerForm extends HTMLElement {
 customElements.define("ic-manager-form", IcManagerForm);
 
 
-// // This to be deleted.
-// class IcOverviewControl extends HTMLElement {
-    
-//     constructor(action, name, context, overview) {
-        
-//         super();
-        
-//         this.icAction = action;
-//         this.icName = name;
-//         this.icContext = context;
-//         this.icOverview = overview
-//     }
-    
-//     connectedCallback() {
-        
-//         this.innerHTML = this.icName;
-//         this.classList.add("primed-control");
-//         this.addEventListener("click", function(event) {
-            
-//             event.stopPropagation
-//             const payload = new Object();
-//             payload.action = this.icAction;
-//             payload.context = this.icContext;
-//             this.icOverview.sendRequest(payload);
-
-
-            
-//             // const editorFields = icContextManager.icContextEditorFields;
-            
-//             switch (this.icAction) {
-        
-//                 case "switch":
-//                     window.location = `/${this.icName}`;
-//                     break;
-                
-//                 case "create": {
-                
-//                     const payload = new Object();
-//                     payload.action = "create";
-//                     this.sendRequest(payload);
-//                     break;
-//                 }
-                
-//                 case "delete": {
-                
-//                     const payload = new Object();
-//                     payload.action = "delete";
-//                     payload.context = CONTEXT;
-//                     this.sendRequest(payload);
-//                     break;
-//                 }
-                
-//                 case "openEditor":
-//                     icContextManager.icContextInfo.remove();
-//                     const icContextEditor = new IcContextEditor();
-//                     icContextManager.prepend(icContextEditor);
-//                     break;
-//                 case "update":{
-//                     this.icContextSwitcher.remove();
-//                     const payload = new Object();
-//                     payload.action = this.icContextEditorAction;
-//                     payload.context = CONTEXT;
-//                     const values = new Object();
-//                     values.name = editorFields.name.childNodes[1].value;
-//                     values.description = editorFields.description.childNodes[1].value;
-//                     values.systems = editorFields.systems.childNodes[1].value;
-//                     payload.values = values;
-//                     icContextManager.sendClientRequest(payload);
-//                     icContextManager.icContextEditor.remove();
-//                     icContextManager.icContextEditor = null;
-//                     break;
-//                 }
-                
-//                 case "cancel":
-//                     icContextManager.icContextEditor.remove();
-//                     icContextManager.icContextEditor = null;
-//                     const newContextInfo = new IcContextInfo();
-//                     icContextManager.prepend(newContextInfo);
-//                     icContextManager.icContextInfo = newContextInfo;
-//                     break;
-//                 default:
-//                     console.error("Unexpected switch statement fall-through.");
-//             }
-//             if (editorFields) icContextManager.icContextEditorFields = null;
-//         });
-//     }
-
-//     controlClicked(event) {
-//     }
-
-// }
-// customElements.define("ic-overview-control", IcOverviewControl);
-
-
-
-
-
-
-
-
-// class IcContextManager extends HTMLElement {
-//     constructor() {
-//         super();
-//     }
-//     async connectedCallback() {
-//         const resource = `/api/contexts?withSystems=${CONTEXT}`;
-//         try {
-//             const response = await fetch(resource);
-//             if(!response.ok) {
-//                 throw new Error(`HTTP error: ${response.status}`);
-//             }
-//             const json = await response.json();
-//             const contextSwitcher = new IcContextSwitcher(json.contexts);
-//             this.icContextSwitcher = contextSwitcher;
-//             this.appendChild(contextSwitcher);
-//             const contextInfo = new IcContextInfo();
-//             this.icContextInfo = contextInfo;
-//             this.appendChild(contextInfo);
-//         } catch (error) {
-//             console.error(`Fetch problem: ${error.message}`);
-//         }
-//     }
-    
-// }
-// customElements.define("ic-context-manager", IcContextManager);
-
-
-// class IcContextInfo extends HTMLElement {
-//     constructor() {
-//         super();
-//         // this.icContexts = contexts;
-//     }
-//     connectedCallback() {
-//         const div = document.createElement("div");
-//         div.classList.add("heading");
-//         const heading = document.createElement("h1");
-//         heading.innerHTML = `${capitalizeString(CONTEXT)}`;
-//         div.appendChild(heading);
-//         this.appendChild(div);
-//         const subtitle = document.createElement("p");
-//         subtitle.innerHTML = DESCRIPTION;
-//         this.appendChild(subtitle);
-//         const openEditorControl = new IcContextControl(CONTEXT, "openEditor", "&#9997;");
-//         icContextManager.icContextEditorControl = openEditorControl;
-//         div.appendChild(openEditorControl);
-//     }
-// }
-// customElements.define("ic-context-info", IcContextInfo);
-
-
-// class IcContextEditor extends HTMLElement {
-//     constructor() {
-//         super();
-//         icContextManager.icContextEditor = this;
-//     }
-//     connectedCallback() {
-//         const heading = document.createElement("h3");
-//         heading.innerHTML = "&#9997; Edit context";
-//         this.appendChild(heading);
-//         icContextManager.icContextEditorFields = new Object();
-//         const spex = [
-//             {
-//                 "tag": "input",
-//                 "id": "name",
-//                 "label": "Name",
-//                 "value": CONTEXT
-//             },
-//             {
-//                 "tag": "textarea",
-//                 "id": "description",
-//                 "label": "Description",
-//                 "value": DESCRIPTION
-//             },
-//             {
-//                 "tag": "textarea",
-//                 "id": "systems",
-//                 "label": "Systems",
-//                 "value": Object.keys(icContext.icSystems)
-//             }
-//         ]
-//         const form = document.createElement("form");
-//         form.addEventListener("submit", (event) => {
-//             event.preventDefault();
-//             const e = new Event("click");
-//             icContextManager.icContextEditor.icSubmitControl.dispatchEvent(e);
-//         });
-//         const div = document.createElement("div");
-//         for (const spec of spex) {
-//             const newField = new IcContextEditorField(spec);
-//             form.appendChild(newField);
-//         }
-//         const controls = document.createElement("div");
-//         controls.classList.add("context-controls");
-//         const submit = new IcContextControl(CONTEXT, "update", "&check;");
-//         this.icSubmitControl = submit;
-//         submit.icContextEditorAction = "update";
-//         controls.appendChild(submit);
-//         const cancel = new IcContextControl(CONTEXT, "cancel", "&cross;");
-//         controls.appendChild(cancel);
-//         this.appendChild(form);
-//         this.appendChild(controls);
-//     }
-//     removeSelf() {
-//         icContextManager.icContextEditor = null;
-//         icContextManager.icContextEditorControl.classList.toggle("primed-control");
-//         this.remove();           
-//     }
-// }
-// customElements.define("ic-context-editor", IcContextEditor);
-
-
-// class IcContextEditorField extends HTMLElement {
-//     constructor(spec) {
-//         super();
-//         this.icSpec = spec;
-//     }
-//     connectedCallback() {
-//         const label = document.createElement("label");
-//         const input = document.createElement(this.icSpec.tag);
-//         input.id = this.icSpec.id;
-//         label.setAttribute("for", this.icSpec.id);
-//         input.value = this.icSpec.value;
-//         label.innerHTML = this.icSpec.label
-//         this.appendChild(label);
-//         this.appendChild(input);
-//         icContextManager.icContextEditorFields[input.id] = this;
-//     }
-
-// }
-// customElements.define("ic-context-editor-field", IcContextEditorField);
-
-
-// class IcContextForm extends HTMLElement {
-//     constructor() {
-//         super();
-//     }
-//     connectedCallback() {
-//         const form = document.createElement("form");
-//         const input = document.createElement("input");
-//         input.autofocus = true;
-//         input.placeholder = "New context";
-//         this.icInput = input;
-//         form.appendChild(input);
-//         const textarea = document.createElement("textarea");
-//         this.icTextarea = textarea;
-//         form.appendChild(textarea);
-//         const submit = document.createElement("button");
-//         submit.type = "submit";
-//         submit.innerHTML = "&check;";
-//         form.appendChild(submit);
-//         const cancel = document.createElement("button");
-//         cancel.type = "button";
-//         cancel.innerHTML = "&cross;";
-//         cancel.addEventListener("click", (event) => {
-//             event.stopPropagation();
-//             if (input.value.length == 0) {
-//                 this.remove();
-//             }
-//             else {
-//                 input.value = "";
-//             }
-//         });
-//         form.appendChild(cancel);
-//         form.addEventListener("submit", (event) => {
-//             event.preventDefault();
-//             icContextManager.createNewContext(this);
-//         });
-//         this.appendChild(form);
-//     }
-// }
-// customElements.define("ic-context-form", IcContextForm);
-
-
 class IcContext extends HTMLElement {
     constructor() {
         super();
@@ -803,7 +537,10 @@ class IcContext extends HTMLElement {
             for (const system of systems) {
                 switch (system.name) {
                     case "conversations":
-                        this.childNodes[0].appendChild(new IcSystem(this, system))
+                        this.childNodes[0].appendChild(new IcSystem(this, system));
+                        break;
+                    case "developers":
+                        this.childNodes[0].appendChild(new IcSystem(this, system));
                         break;
                     default:
                         this.childNodes[1].appendChild(new IcSystem(this, system));
@@ -950,6 +687,50 @@ class IcSystem extends HTMLElement {
                     "action": "nullify",
                     "symbol": "&#8856; Delete",
                 }
+            ],
+            "developers": [
+                {
+                    "action": "update",
+                    "symbol": "&#9998; Update",
+                },
+                {
+                    "action": "create",
+                    "symbol": "&#10022; Create",
+                },
+                {
+                    "action": "nullify",
+                    "symbol": "&#8856; Delete",
+                }
+            ],
+            "codefiles": [
+                {
+                    "action": "update",
+                    "symbol": "&#9998; Update",
+                },
+                {
+                    "action": "create",
+                    "symbol": "&#10022; Create",
+                },
+                {
+                    "action": "nullify",
+                    "symbol": "&#8856; Delete",
+                },
+                {
+                    "action": "higher",
+                    "symbol": "&uarr; Higher",
+                },
+                {
+                    "action": "lower",
+                    "symbol": "&darr; Lower",
+                },
+                {
+                    "action": "top",
+                    "symbol": "&#8607; Top",
+                },
+                {
+                    "action": "bottom",
+                    "symbol": "&#8609; Bottom",
+                }
             ]
         }
         const spec = specs[this.icName];
@@ -970,7 +751,7 @@ class IcSystem extends HTMLElement {
                 
                 if (this.icSelectedDetail) {
                     
-                    if (["items"].includes(this.icName)) {
+                    if (["items", "codefiles"].includes(this.icName)) {
 
                         const prime = ["update", "nullify"];
                         for (const control of this.icControls) {
@@ -1032,7 +813,7 @@ class IcSystem extends HTMLElement {
     updateDisplay(data, operation) {
         switch (operation) {
             case "createItem":
-                if (["items", "conversations"].includes(this.icName)) {
+                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
                     const system = this;
                     const item = new Object();
                     item.id = null;
@@ -1049,7 +830,7 @@ class IcSystem extends HTMLElement {
                 // Nothing needed. The user just gets a csv file. Nothing changes.
                 break;
             case "updateItem":
-                if (["items", "conversations"].includes(this.icName)) {
+                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
                     this.icSelectedItem.updateSelf(data);
                 }
                 break;
@@ -1057,7 +838,7 @@ class IcSystem extends HTMLElement {
                 this.icSelectedItem.createDetail(data);
                 break;
             case "nullifyItem":
-                if (["items", "conversations"].includes(this.icName)) {
+                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
                     for (const item of this.icItems) {
                         if (item.icRank > this.icSelectedItem.icRank) {
                             item.icRank = item.icRank - 1;
@@ -1075,7 +856,7 @@ class IcSystem extends HTMLElement {
                 }
                 break;
             case "lowerItem":
-                if (["items"].includes(this.icName)) {
+                if (["items", "codefiles"].includes(this.icName)) {
                     const lowerItem = this.icItems[this.icSelectedItem.icRank];
                     const newLowerItem = this.icItems[this.icSelectedItem.icRank + 1]
                     this.icItems.splice(this.icSelectedItem.icRank - 1, 2, lowerItem, this.icSelectedItem);
@@ -1084,7 +865,7 @@ class IcSystem extends HTMLElement {
                 }
                 break;
             case "topItem":
-                if (["items"].includes(this.icName)) {
+                if (["items", "codefiles"].includes(this.icName)) {
                     this.icItemDisplay.insertBefore(this.icSelectedItem, this.icItems[0]);
                     for (let i = 0; i < this.icItemDisplay.childElementCount; i++) {
                         this.icItems[i] = this.icItemDisplay.childNodes[i];
@@ -1093,7 +874,7 @@ class IcSystem extends HTMLElement {
                 }
                 break;
             case "bottomItem":
-                if (["items"].includes(this.icName)) {
+                if (["items", "codefiles"].includes(this.icName)) {
                     // Update the DOM
                     this.icItemDisplay.appendChild(this.icSelectedItem);
                     // Update this.icItems
@@ -1104,13 +885,13 @@ class IcSystem extends HTMLElement {
                 }
                 break;
             case "updateDetail": {
-                if (["items"].includes(this.icName)) {
+                if (["items", "codefiles"].includes(this.icName)) {
                     this.icSelectedDetail.updateSelf(data);
                 }
                 break;
             }
             case "nullifyDetail":
-                if (["items"].includes(this.icName)) {
+                if (["items", "codefiles"].includes(this.icName)) {
                     this.icSelectedDetail.remove();
                 }
                 for (const detail of this.icSelectedItem.icDetails) {
@@ -1164,7 +945,7 @@ class IcSystem extends HTMLElement {
         switch (operation) {
 
             case "createItem":
-                if (["items", "conversations"].includes(this.icName)) {
+                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
                     const len = this.icItems.length;
                     const newItem = this.icItems[len - 1];
                     newItem.icId = data.id;
@@ -1217,7 +998,7 @@ class IcSystem extends HTMLElement {
                 // Nothing needed.
                 break;
             case "createDetail":
-                if (["conversations"].includes(this.icName)) {
+                if (["conversations", "developers"].includes(this.icName)) {
                     this.icSelectedItem.createMessage(data);
                 }
                 break;
@@ -1256,7 +1037,7 @@ class IcSystem extends HTMLElement {
     revertDisplayUpdate(data, operation) {
         switch (operation) {
             case "createItem":
-                if (["items", "conversations"].includes(this.icName)) {
+                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
                     const len = this.icItems.length;
                     this.icItems[len - 1].remove();
                     const l = this.icItems.pop();
@@ -1274,12 +1055,12 @@ class IcSystem extends HTMLElement {
                 break;
             case "updateItem":
                 data.name = data.oldName;
-                if (["items", "conversations"].includes(this.icName)) {
+                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
                     this.icSelectedItem.updateSelf(data);
                 }
                 break;
             case "createDetail":
-                if (["items", "conversations"].includes(this.icName)) {
+                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
                     const len = this.icSelectedItem.icDetails.length;
                     this.icSelectedItem.icDetailDisplay.childNodes[len - 1].remove();
                     const l = this.icSelectedItem.icDetails.pop();
@@ -1354,7 +1135,7 @@ class IcSystem extends HTMLElement {
             }
             case "updateDetail":
                 data.content = data.oldContent;
-                if (["items"].includes(this.icName)) {
+                if (["items", "codefiles"].includes(this.icName)) {
                     this.icSelectedDetail.updateSelf(data);
                 }
                 break;
@@ -1422,15 +1203,18 @@ class IcItem extends HTMLElement {
             nameContainer.classList.add("name");
             nameContainer.innerHTML = this.icSystem.icContext.mdConverter.makeHtml(this.icName);
             this.appendChild(nameContainer);
+
+            if (["items", "conversations", "developers"].includes(this.icSystem.icName)) {
+                const icDetailDisplay = document.createElement("div");
+                icDetailDisplay.classList.add("hidden");
+                icDetailDisplay.classList.add("ic-detail-display");
+                this.icDetailDisplay = icDetailDisplay;
+        
+                this.appendChild(icDetailDisplay);
+                
+                this.getDetails();
+            }
             
-            const icDetailDisplay = document.createElement("div");
-            icDetailDisplay.classList.add("hidden");
-            icDetailDisplay.classList.add("ic-detail-display");
-            this.icDetailDisplay = icDetailDisplay;
-    
-            this.appendChild(icDetailDisplay);
-            
-            this.getDetails();
     
             this.addEventListener("click", this.singleClicked);
             this.addEventListener("dblclick", this.doubleClicked);
@@ -1477,9 +1261,10 @@ class IcItem extends HTMLElement {
     }
 
     ctrlClicked(event) {
-
-        this.classList.toggle("showing-details");
-        this.icDetailDisplay.classList.toggle("hidden");
+        if (["items", "conversations", "developers"].includes(this.icSystem.icName)) {
+            this.classList.toggle("showing-details");
+            this.icDetailDisplay.classList.toggle("hidden");
+        }
         if (this.icSystem.icSelectedItem && this.icSystem.icSelectedItem != this) this.dispatchEvent(new Event("click"));
     }
 
@@ -1774,33 +1559,44 @@ class IcForm extends HTMLElement {
         const infoTexts = {
             "createItem": {
                 "items": "You're creating an item.",
-                "conversations": "You're creating a conversation."
+                "conversations": "You're creating a conversation.",
+                "developers": "You're creating a developer.",
+                "codefiles": "You're specifying a codefile."
             },
             "importItems": {
-                "items": "You're importing items."
+                "items": "You're importing items.",
+                "codefiles": "You're importing codefile specifications."
             },
             "exportItems": {
-                "items": "You're exporting items."
+                "items": "You're exporting items.",
+                "codefiles": "You're exporting codefile specifications."
             },
             "updateItem": {
                 "items": "You're updating an item.",
-                "conversations": "You're updating a conversation."
+                "conversations": "You're updating a conversation.",
+                "developers": "You're updating a conversation.",
+                "codefiles": "You're updating a codefile specification."
             },
             "createDetail": {
                 "items": "You're creating a detail.",
-                "conversations": "You're creating a message."
+                "conversations": "You're creating a message.",
+                "developers": "You're creating a message."
             },
             "nullifyItem": {
                 "items": "You're deleting an item.",
-                "conversations": "Are you sure you want to delete this conversation?"
+                "conversations": "Are you sure you want to delete this conversation?",
+                "developers": "Are you sure you want to delete this developer?",
+                "codefiles": "You're deleting a codefile specification."
             },
             "updateDetail": {
                 "items": "You're updating a detail.",
-                "conversations": "Do not proceed."
+                "conversations": "Do not proceed.",
+                "developers": "Do not proceed."
             },
             "nullifyDetail": {
                 "items": "You're deleting an detail.",
-                "conversations": "Do not proceed."
+                "conversations": "Do not proceed.",
+                "developers": "Do not proceed."
             }
         }
         const infoText = infoTexts[this.icOperation][this.icSystem.icName];
@@ -1852,6 +1648,44 @@ class IcForm extends HTMLElement {
                                 "type": "text",
                                 "label": "Name",
                                 "name": "name"
+                            }
+                        });
+                        break;
+                    }
+                    case "developers": {
+                        specs.push(new Array());
+                        const id = `${this.icSystem.icName}-${specs[0].length}`;
+                        specs[0].push({
+                            "element": "input",
+                            "attributes": {
+                                "id": id,
+                                "type": "text",
+                                "label": "Name",
+                                "name": "name"
+                            }
+                        });
+                        break;
+                    }
+                    case "codefiles": {
+                        specs.push(new Array());
+                        const id = `${this.icSystem.icName}-${specs[0].length}`;
+                        specs[0].push({
+                            "element": "input",
+                            "attributes": {
+                                "id": id,
+                                "type": "file",
+                                "name": "filepath"
+                            }
+                        });
+                        specs.push(new Array());
+                        specs[1].label = "Language";
+                        specs[1].push({
+                            "element": "input",
+                            "attributes": {
+                                "id": id,
+                                "type": "radio",
+                                "label": "Python",
+                                "name": "language"
                             }
                         });
                         break;
@@ -1974,6 +1808,41 @@ class IcForm extends HTMLElement {
                         })
                         break;
                     }
+                    case "developers": {
+                        specs.push(new Array());
+                        let id = `${this.icSystem.icName}-${specs[0].length}`;
+                        specs[0].push({
+                            "element": "input",
+                            "attributes": {
+                                "id": id,
+                                "type": "text",
+                                "label": "Name",
+                                "name": "name",
+                                "value": this.icSystem.icSelectedItem.icName
+                            }
+                        });
+                        id = `${this.icSystem.icName}-${specs[0].length}`;
+                        specs[0].push({
+                            "element": "input",
+                            "attributes": {
+                                "id": id,
+                                "type": "hidden",
+                                "name": "id",
+                                "value": this.icSystem.icSelectedItem.icId
+                            }
+                        })
+                        id = `${this.icSystem.icName}-${specs[0].length}`;
+                        specs[0].push({
+                            "element": "input",
+                            "attributes": {
+                                "id": id,
+                                "type": "hidden",
+                                "name": "oldName",
+                                "value": this.icSystem.icSelectedItem.icName
+                            }
+                        })
+                        break;
+                    }
                     default:
                         console.error("Unexpected switch statement fall-through.");
                 }
@@ -2025,6 +1894,28 @@ class IcForm extends HTMLElement {
                         });
                         break;
                     }
+                    case "developers": {
+                        specs.push(new Array());
+                        const id = `${this.icSystem.icName}-${specs[0].length}`;
+                        specs[0].push({
+                            "element": "textarea",
+                            "attributes": {
+                                "id": id,
+                                "label": "Message",
+                                "name": "content",
+                                "type": "textarea" // Needed for the class attribute.
+                            }
+                        });
+                        specs[0].push({
+                            "element": "input",
+                            "attributes": {
+                                "type": "hidden",
+                                "name": "id",
+                                "value": this.icSystem.icSelectedItem.icId
+                            }
+                        });
+                        break;
+                    }
                     default:
                         console.error("Unexpected switch statement fall-through.");
                 }
@@ -2045,6 +1936,18 @@ class IcForm extends HTMLElement {
                         break;
                     }
                     case "conversations": {
+                        specs.push(new Array());
+                        specs[0].push({
+                            "element": "input",
+                            "attributes": {
+                                "type": "hidden",
+                                "name": "id",
+                                "value": this.icSystem.icSelectedItem.icId
+                            }
+                        });
+                        break;
+                    }
+                    case "developers": {
                         specs.push(new Array());
                         specs[0].push({
                             "element": "input",
@@ -2192,6 +2095,8 @@ class IcForm extends HTMLElement {
                     }
                     case "conversations":
                         break;
+                    case "developers":
+                        break;
                     default:
                         console.error("Unexpected switch statement fall-through.");
                 }
@@ -2220,6 +2125,8 @@ class IcForm extends HTMLElement {
                         break;
                     }
                     case "conversations":
+                        break;
+                    case "developers":
                         break;
                     default:
                         console.error("Unexpected switch statement fall-through.");
