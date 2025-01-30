@@ -327,11 +327,11 @@ ic-detail a:hover, ic-item a:hover {
     text-decoration: underline;
 }
 
-ic-system.conversations ic-detail {
+ic-system.conversations ic-detail, ic-system.developers ic-detail {
     background-color: transparent;
 }
 
-ic-system.conversations ic-detail.user-role {
+ic-system.conversations ic-detail.user-role, ic-system.developers ic-detail.user-role {
     margin-left: auto;
     background-color: var(--tertiary);
     max-width: 75%;

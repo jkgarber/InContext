@@ -774,6 +774,7 @@ class IcSystem extends HTMLElement {
                     else if (n == rank) {
                         dontPrime.push("lower", "bottom");
                     }
+                    if (this.icName == "codefiles") dontPrime.push("create");
                     for (const control of this.icControls) {
                         if (!dontPrime.includes(control.icAction)) {
                             control.icPrimed = true;
@@ -1673,19 +1674,9 @@ class IcForm extends HTMLElement {
                             "element": "input",
                             "attributes": {
                                 "id": id,
-                                "type": "file",
-                                "name": "filepath"
-                            }
-                        });
-                        specs.push(new Array());
-                        specs[1].label = "Language";
-                        specs[1].push({
-                            "element": "input",
-                            "attributes": {
-                                "id": id,
-                                "type": "radio",
-                                "label": "Python",
-                                "name": "language"
+                                "type": "text",
+                                "name": "name",
+                                "label": "Path"
                             }
                         });
                         break;
