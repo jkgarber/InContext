@@ -54,16 +54,17 @@ ic-switcher {
     align-items: center;
 }
 
-ic-switch, ic-owner-control, ic-manager-control {
+ic-switch, ic-owner-control, ic-manager-control, .confirmation-buttons button {
     box-shadow: 0 -1px 2px var(--lightaccent);
     padding: 8px;
     border: 1px solid var(--tertiary);
     cursor: pointer;
     width: fit-content;
     text-align: center;
+    color: inherit;
 }
 
-ic-switch {
+ic-switch, .confirmation-buttons button {
     background-color: var(--primary);
 }
 
@@ -75,11 +76,30 @@ ic-owner-control.delete {
     background-color: #330000;
 }
 
+.delete-confirmation-form {
+    background-color: transparent;
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    align-items: center;
+}
+
+.delete-confirmation-form p {
+    display: inline-block;
+    height: fit-content;
+}
+
+.confirmation-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+}
+
 ic-manager-control {
     background-color: var(--secondary);
 }
 
-ic-switch:active, ic-owner-control:active, ic-manager-control:active {
+ic-switch:active, ic-owner-control:active, ic-manager-control:active, .confirmation-buttons button:active {
     box-shadow: 0 0 2px var(--lightaccent);
 }
 

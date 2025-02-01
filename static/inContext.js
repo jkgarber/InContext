@@ -212,32 +212,73 @@ customElements.define("ic-owner", IcOwner);
 
 
 class IcOwnerControl extends HTMLElement {
-
     constructor(overview, action, name) {
-
         super();
-
         this.icOverview = overview;
         this.icAction = action;
         this.icName = name;
     }
 
     connectedCallback() {
-
         this.innerHTML = this.icName;
         this.classList.add(this.icAction);
         this.addEventListener("click", (event) => {
             event.stopPropagation();
-            const payload = {
-                "action": this.icAction,
-                "data": {
-                    "context": CONTEXT
-                }
-            };
-            this.icOverview.sendRequest(payload);
+
+            if (this.icAction === 'delete') {
+                this.showDeleteConfirmation();
+            } else {
+                this.proceedWithAction();
+            }
         });
     }
 
+    showDeleteConfirmation() {
+        // Create confirmation form
+        const confirmationForm = document.createElement('div');
+        confirmationForm.classList.add('delete-confirmation-form');
+
+        const message = document.createElement('p');
+        message.innerHTML = 'Are you sure you want to delete this context?';
+        confirmationForm.appendChild(message);
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.classList.add('confirmation-buttons');
+
+        const yesButton = document.createElement('button');
+        yesButton.innerHTML = 'Yes';
+        yesButton.addEventListener('click', () => {
+            this.proceedWithAction();
+        });
+
+        const noButton = document.createElement('button');
+        noButton.innerHTML = 'No';
+        noButton.addEventListener('click', () => {
+            this.removeConfirmationForm(confirmationForm);
+        });
+
+        buttonContainer.appendChild(yesButton);
+        buttonContainer.appendChild(noButton);
+
+        confirmationForm.appendChild(buttonContainer);
+
+        // Append to the parent element
+        this.parentElement.appendChild(confirmationForm);
+    }
+
+    removeConfirmationForm(form) {
+        form.remove();
+    }
+
+    proceedWithAction() {
+        const payload = {
+            "action": this.icAction,
+            "data": {
+                "context": CONTEXT
+            }
+        };
+        this.icOverview.sendRequest(payload);
+    }
 }
 customElements.define("ic-owner-control", IcOwnerControl);
 
