@@ -358,6 +358,8 @@ def conduct_operation(json):
                     return update_item(json)
                 case 'conversations':
                     return update_conversation(json)
+                case 'codefiles':
+                    return update_item(json)
                 case _:
                     return unsupported_operation(json)
         case 'createDetail':

@@ -1834,6 +1834,41 @@ class IcForm extends HTMLElement {
                         })
                         break;
                     }
+                    case "codefiles": {
+                        specs.push(new Array());
+                        let id = `${this.icSystem.icName}-${specs[0].length}`;
+                        specs[0].push({
+                            "element": "input",
+                            "attributes": {
+                                "id": id,
+                                "type": "text",
+                                "label": "Path",
+                                "name": "name",
+                                "value": this.icSystem.icSelectedItem.icName
+                            }
+                        });
+                        id = `${this.icSystem.icName}-${specs[0].length}`;
+                        specs[0].push({
+                            "element": "input",
+                            "attributes": {
+                                "id": id,
+                                "type": "hidden",
+                                "name": "id",
+                                "value": this.icSystem.icSelectedItem.icId
+                            }
+                        })
+                        id = `${this.icSystem.icName}-${specs[0].length}`;
+                        specs[0].push({
+                            "element": "input",
+                            "attributes": {
+                                "id": id,
+                                "type": "hidden",
+                                "name": "oldName",
+                                "value": this.icSystem.icSelectedItem.icName
+                            }
+                        })
+                        break;
+                    }
                     default:
                         console.error("Unexpected switch statement fall-through.");
                 }
