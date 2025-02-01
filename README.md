@@ -9,6 +9,7 @@ The result: more useful responses and faster conversations.
 ## Setup Instructions for a Development Server
 
 - `export OPENAI_API_KEY='your_openai_api_key'`
+- `export ANTHROPIC_API_KEY='your_anthropic_api_key'`
 - `sudo apt update && sudo apt upgrade`
 - `sudo apt install sqlite3`
 - `python3 -m venv .venv`
