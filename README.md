@@ -20,7 +20,7 @@ The result: more useful responses and faster conversations.
 - `pip install flask`
 - `pip install flask-session`
 - `git clone git@github.com:jkgarber/InContext.git`
-- `python3 inContext.py <user_name>`
+- `python3 in_context.py <user_name>`
 
 ## User Guide
 
