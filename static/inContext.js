@@ -2026,6 +2026,18 @@ class IcForm extends HTMLElement {
                         });
                         break;
                     }
+                    case "codefiles": {
+                        specs.push(new Array());
+                        specs[0].push({
+                            "element": "input",
+                            "attributes": {
+                                "type": "hidden",
+                                "name": "id",
+                                "value": this.icSystem.icSelectedItem.icId
+                            }
+                        });
+                        break;
+                    }
                     default:
                         console.error("Unexpected switch statement fall-through.");
                     }

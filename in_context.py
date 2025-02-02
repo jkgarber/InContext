@@ -358,6 +358,8 @@ def conduct_operation(json):
                     return update_item(json)
                 case 'conversations':
                     return update_conversation(json)
+                case 'developers':
+                    return update_item(json)
                 case 'codefiles':
                     return update_item(json)
                 case _:
@@ -378,6 +380,10 @@ def conduct_operation(json):
                     return nullify_item(json)
                 case 'conversations':
                     return nullify_conversation(json)
+                case 'developers':
+                    return nullify_item(json)
+                case 'codefiles':
+                    return nullify_item(json)
                 case _:
                     return unsupported_operation(json)
         case 'higherItem':
