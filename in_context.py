@@ -2,7 +2,7 @@ import sys
 
 if len(sys.argv) != 2:
     print('Usage: python3 in_context.py <user_name>')
-    exit(1)
+    sys.exit(1)
 
 user_name = sys.argv[1]
 
@@ -29,10 +29,12 @@ app = Flask(__name__)
 
 import openai
 import anthropic
+import google.generativeai as genai
 import os
 import json
 openai_client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"),)
 anthropic_client = anthropic.Anthropic()
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 openai_llm = 'gpt-4o-mini'
 anthropic_llm = 'claude-3-5-haiku-20241022'
 def llm_chat(conversation_history, user_content, item_list, context):
@@ -70,6 +72,47 @@ def llm_developer_chat(conversation_history, user_content, item_list, context):
         return message.content[0].text
     except Exception as e:
         return f"Error: {str(e)}"
+    
+
+def openai_response(model, instructions, conversation_history, user_content):
+    try:
+        developer_message = {"role": "developer", "content": instructions}
+        messages = [developer_message] + conversation_history + [{"role":"user", "content": user_content}]
+        response = openai_client.chat.completions.create(
+            model=model,
+            messages=messages,
+        )
+        return dict(role='assistant', text=response.choices[0].message.content)
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+
+def gemini_response(model, instructions, conversation_history, user_content):
+    try:
+        gemini_model = genai.GenerativeModel(model, system_instruction=instructions)
+        chat = gemini_model.start_chat(
+            history=conversation_history
+        )
+        response = chat.send_message(user_content)
+        return dict(role='model', text=response.text)
+    except Exception as e:
+        print(" An error occured.")
+        return f"Error: {str(e)}"
+
+
+def anthropic_response(model, instructions, conversation_history, user_content):
+    try:
+        messages = conversation_history + [{"role":"user", "content": user_content}]
+        response = anthropic_client.messages.create(
+            model=model,
+            system=instructions,
+            messages=messages,
+            max_tokens=1024,
+        )
+        return dict(role=response.role, text=response.content[0].text) 
+    except Exception as e:
+        return f"Error: {str(e)}"
+
 
 #-- Database setup --------------------------------------------------------------------------------
 
@@ -113,7 +156,7 @@ try:
     con.close()
 except Exception as e:
     print(f"Error: {str(e)}")
-    exit(2)
+    sys.exit(2)
 
 
 #-- Login/Users -----------------------------------------------------------------------------------
@@ -338,6 +381,8 @@ def conduct_operation(json):
                     return create_developer(json)
                 case 'codefiles':
                     return create_codefile(json)
+                case 'llms':
+                    return create_llm(json)
                 case _:
                     return unsupported_operation(json)
         case 'importItems':
@@ -362,6 +407,8 @@ def conduct_operation(json):
                     return update_item(json)
                 case 'codefiles':
                     return update_item(json)
+                case 'llms':
+                    return update_llm(json)
                 case _:
                     return unsupported_operation(json)
         case 'createDetail':
@@ -372,6 +419,8 @@ def conduct_operation(json):
                     return create_message(json)
                 case 'developers':
                     return create_developer_message(json)
+                case 'llms':
+                    return create_message_llms(json)
                 case _:
                     return unsupported_operation(json)
         case 'nullifyItem':
@@ -565,6 +614,38 @@ def create_codefile(json):
         return unsuccessful_operation(json)
 
 
+def create_llm(json):
+    # return deliberate_failure() # For testing (simulated server issue).
+    operation = dict()
+    if json['data']['name']:
+        operation['valid'] = True
+    else:
+        return invalid_operation('item name')
+    try:
+        con = sqlite3.connect(db)
+        con.row_factory = dict_factory
+        cur = con.cursor()
+        res = cur.execute("SELECT COUNT(*) as count FROM items WHERE context = ? AND system = ? AND rank NOT NULL", (json['context'], json['system'],))
+        count = res.fetchone()['count']
+        rank = count + 1
+        cur.execute("INSERT INTO items(name, rank, context, system) VALUES( ?, ?, ?, ?)", (json['data']['name'], rank, json['context'], json['system'],))
+        con.commit()
+        res = cur.execute("SELECT id FROM items WHERE context = ? AND system = ? AND rank = ?", (json['context'], json['system'], rank,))
+        item_id = res.fetchone()['id']
+        # Insert the first detail with the model
+        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (item_id, 'llm', json['data']['model'], 1,))
+        # Insert the second detail with the instructions
+        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (item_id, 'llm_manager', json['data']['instructions'], 2,))
+        cur.close()
+        con.close()
+        operation['successful'] = True
+        operation['response'] = dict(id=item_id, rank=rank)
+        return operation
+    except Exception as error:
+        print(error)
+        return unsuccessful_operation(json)
+
+
 import csv
 def import_items(json):
     operation = dict()
@@ -690,6 +771,32 @@ def update_conversation(json):
         con.row_factory = dict_factory
         cur = con.cursor()
         cur.execute("UPDATE items SET name = ? WHERE id = ?", (json['data']['name'], json['data']['id'],))
+        con.commit()
+        cur.close()
+        con.close()
+        operation['successful'] = True
+        operation['response'] = dict(message='Nothing needed.')
+        return operation
+    except Exception as error:
+        print(error)
+        return unsuccessful_operation(json)
+    
+
+def update_llm(json):
+    # return deliberate_failure() # For testing (simulated server issue).
+    operation = dict()
+    if json['data']['name'] and json['data']['id']:
+        operation['valid'] = True
+    else:
+        return invalid_operation('item name, item id')
+    try:
+        con = sqlite3.connect(db)
+        con.row_factory = dict_factory
+        cur = con.cursor()
+        cur.execute("UPDATE items SET name = ? WHERE id = ?", (json['data']['name'], json['data']['id'],))
+        cur.execute("UPDATE details SET content = ? WHERE item_id = ? AND rank = 1", (json['data']['model'], json['data']['id'],))
+        instructions = f'Assume the role of {json["data"]["role"]}. {json["data"]["purpose"]}'
+        cur.execute("UPDATE details SET content = ? WHERE item_id = ? AND rank = 2", (instructions, json['data']['id'],))
         con.commit()
         cur.close()
         con.close()
@@ -1091,6 +1198,47 @@ def create_developer_message(json):
         # add chat completion to server response
         operation['successful'] = True
         operation['response'] = dict(content=completion)
+        return operation
+    except Exception as error:
+        print(error)
+        return unsuccessful_operation(json)
+
+
+def create_message_llms(json):
+    # return deliberate_failure() # For testing (simulated server issue).
+    operation = dict()
+    if json['data']['content'] and json['data']['id']:
+        operation['valid'] = True
+    else:
+        return invalid_operation('content', 'item id')
+    try:
+        con = sqlite3.connect(db)
+        con.row_factory = dict_factory
+        cur = con.cursor()
+        res = cur.execute("SELECT COUNT(*) as count FROM details WHERE item_id = ? AND rank NOT NULL", (json['data']['id'],))
+        count = res.fetchone()['count']
+        rank = count + 1
+        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], 'user', json['data']['content'], rank,))
+        con.commit()
+        # generate llm response
+        # generate conversation history
+        res = cur.execute("SELECT role, content FROM details WHERE item_id = ? AND rank > 2 AND rank NOT NULL ORDER BY rank", (json['data']['id'],))
+        conversation_history = res.fetchall()
+        if json['data']['model'] in ['gpt-4o-mini', 'gpt-4o', 'o3-mini', 'o1']:
+            llm_response = openai_response(json['data']['model'], json['data']['instructions'], conversation_history, json['data']['content'])
+        elif json['data']['model'] in ['gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro', 'gemini-2.0-flash-exp']:
+            llm_response = gemini_response(json['data']['model'], json['data']['instructions'], conversation_history, json['data']['content'])
+        elif json['data']['model'] in ['claude-3-5-haiku-latest', 'claude-3-5-sonnet-latest']:
+            llm_response = anthropic_response(json['data']['model'], json['data']['instructions'], conversation_history, json['data']['content'])
+        # insert chat completion to db
+        rank += 1
+        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], llm_response['role'], llm_response['text'], rank,))
+        con.commit()
+        cur.close()
+        con.close()
+        # add chat completion to server response
+        operation['successful'] = True
+        operation['response'] = dict(content=llm_response['text'])
         return operation
     except Exception as error:
         print(error)
