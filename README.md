@@ -9,16 +9,12 @@ The result: more useful responses and faster conversations.
 ## Setup Instructions for a Development Server
 
 - `export OPENAI_API_KEY='your_openai_api_key'`
-- `export ANTHROPIC_API_KEY='your_anthropic_api_key'`
-- `export GEMINI_API_KEY='your_gemini_api_key'`
 - `sudo apt update && sudo apt upgrade`
 - `sudo apt install sqlite3`
 - `python3 -m venv .venv`
 - `source .venv/bin/activate`
 - `pip install --upgrade pip`
 - `pip install openai`
-- `pip install anthropic`
-- `pip install google.generativeai`
 - `pip install flask`
 - `pip install flask-session`
 - `git clone git@github.com:jkgarber/InContext.git`

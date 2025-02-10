@@ -1,6 +1,6 @@
 import sys
 
-if len(sys.argv) != 2:
+if len(sys.argv) < 2:
     print('Usage: python3 in_context.py <user_name>')
     sys.exit(1)
 
@@ -27,89 +27,25 @@ app = Flask(__name__)
 
 #-- LLM chat function ------------------------------------------------------------------------
 
-import openai
-import anthropic
-import google.generativeai as genai
-import os
+from openai import OpenAI
 import json
-openai_client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"),)
-anthropic_client = anthropic.Anthropic()
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-openai_llm = 'gpt-4o-mini'
-anthropic_llm = 'claude-3-5-haiku-20241022'
-def llm_chat(conversation_history, user_content, item_list, context):
-    if context == 'Testing':
-        memory = f"The user's name is {user_name}. He is developing a ChatGPT wrapper because he wants to work with AI more independently and in his own way. You are communicating with {user_name} via the wrapper. This conversation is part of a testing routine for the app's development. The list of items you are about to receive contains test data, which is managed by {user_name} via the app's UI. Items: {item_list}"
-    else:
-        memory = f"The user's name is {user_name}, and he has a list of items and each item has a set of details. You are receiving this list of items in preparation for the conversation with {user_name}. {user_name} uses this list of items to organize his thoughts and prioritize his efforts. {user_name} wants you to take the list of items into account when formulating your response. Here's some more information about the items. The items are listed in order of priority. The details of each item are ordered by date added (oldest to newest). Note that details are optional, so it's possible that the list of details for an item will be empty. Note that the content itself is written in Markdown. Now, you should know, {user_name} developed a ChatGPT wrapper because he wants to work with AI more independently and in his own way. The wrapper app is called 'InContext'. You are communicating with {user_name} via inContext. {user_name} manages the items, their details and their priority level via the InContext UI, which also displays this conversation. {user_name} might update the items during the conversation and you're receiving the most up-to-date version of the item list in this system message. So, if {user_name} updates the list during the conversation, you'll see a previous version of the list in the conversation history, which follows this system message. Good luck. Make sure you take into account the most up-to-date version of the item list in your response. {item_list}"
-    try:
-        system_message = {"role": "system", "content": f"Assume the role of a helpful assistant. Use this information to help the user: {memory}"}
-        messages = [system_message] + conversation_history + [{"role":"user", "content": user_content}]
-        response = openai_client.chat.completions.create(
-            model=openai_llm,
-            messages=messages,
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"Error: {str(e)}"
 
-def llm_developer_chat(conversation_history, user_content, item_list, context):
-    system = f"Assume the role of a full stack web developer specialising in Python-Flask, SQLite, and vanilla JS, HTML, and CSS. Your purpose is to assist the user with coding tasks."
-    intro = [
-        {
-            "role":"user",
-            "content": f"Hi, I'm {user_name}. I'm developing an LLM wrapper app because I want to work with LLMs in a customized way. The content you are about to receive contains the current code files, which I inputted via the app's UI. (You are communicating with me via the wrapper.) File contents: {item_list}"
-        }
-    ]
-    messages = intro + conversation_history + [{"role":"user", "content": user_content}]
-    try:
-        message = anthropic_client.messages.create(
-            model=anthropic_llm,
-            system=system,
-            messages=messages,
-            max_tokens=1024,
-        )
-        return message.content[0].text
-    except Exception as e:
-        return f"Error: {str(e)}"
-    
+openai_client = OpenAI()
+openai_model = 'gpt-4o-mini'
 
-def openai_response(model, instructions, conversation_history, user_content):
+
+def openai_response(items, conversation_history, model='gpt-4o-mini', instructions='You are a helpful assistant.'):
     try:
         developer_message = {"role": "developer", "content": instructions}
-        messages = [developer_message] + conversation_history + [{"role":"user", "content": user_content}]
+        messages = [developer_message] + conversation_history
+        if len(items) > 0:
+            contextual_data_message = {"role":"developer", "content": f'The user provided this contextual data: {items}'}
+            messages.insert(1, contextual_data_message)
         response = openai_client.chat.completions.create(
             model=model,
             messages=messages,
         )
         return dict(role='assistant', text=response.choices[0].message.content)
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-
-def gemini_response(model, instructions, conversation_history, user_content):
-    try:
-        gemini_model = genai.GenerativeModel(model, system_instruction=instructions)
-        chat = gemini_model.start_chat(
-            history=conversation_history
-        )
-        response = chat.send_message(user_content)
-        return dict(role='model', text=response.text)
-    except Exception as e:
-        print(" An error occured.")
-        return f"Error: {str(e)}"
-
-
-def anthropic_response(model, instructions, conversation_history, user_content):
-    try:
-        messages = conversation_history + [{"role":"user", "content": user_content}]
-        response = anthropic_client.messages.create(
-            model=model,
-            system=instructions,
-            messages=messages,
-            max_tokens=1024,
-        )
-        return dict(role=response.role, text=response.content[0].text) 
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -131,13 +67,29 @@ try:
     contexts = [
         (
             'Testing',
-            'Testing context.  Note: ChatGPT is not primed to assist you effectively in the context because this is the testing context. Create a new context to utilize ChatGPT more effectively.',
+            'Testing context.',
         ),
+        (
+            'Main',
+            'Main context.',
+        )
     ]
     systems = [
         (
             'items',
             'Testing',
+        ),
+        (
+            'conversations',
+            'Testing',
+        ),
+        (
+            'items',
+            'Main',
+        ),
+        (
+            'conversations',
+            'Main',
         ),
     ]
     res = cur.execute('SELECT * FROM contexts')
@@ -284,7 +236,7 @@ def register():
 @app.route("/")
 @login_required
 def root():
-    server_response = redirect("/Testing")
+    server_response = redirect("/Main")
     return server_response, 301
 
 
@@ -374,15 +326,9 @@ def conduct_operation(json):
         case 'createItem':
             match json['system']:
                 case 'items':
-                    return create_item(json)
+                        return create_item(json)
                 case 'conversations':
                     return create_conversation(json)
-                case 'developers':
-                    return create_developer(json)
-                case 'codefiles':
-                    return create_codefile(json)
-                case 'llms':
-                    return create_llm(json)
                 case _:
                     return unsupported_operation(json)
         case 'importItems':
@@ -403,12 +349,6 @@ def conduct_operation(json):
                     return update_item(json)
                 case 'conversations':
                     return update_conversation(json)
-                case 'developers':
-                    return update_item(json)
-                case 'codefiles':
-                    return update_item(json)
-                case 'llms':
-                    return update_llm(json)
                 case _:
                     return unsupported_operation(json)
         case 'createDetail':
@@ -417,10 +357,6 @@ def conduct_operation(json):
                     return create_detail(json)
                 case 'conversations':
                     return create_message(json)
-                case 'developers':
-                    return create_developer_message(json)
-                case 'llms':
-                    return create_message_llms(json)
                 case _:
                     return unsupported_operation(json)
         case 'nullifyItem':
@@ -429,10 +365,6 @@ def conduct_operation(json):
                     return nullify_item(json)
                 case 'conversations':
                     return nullify_conversation(json)
-                case 'developers':
-                    return nullify_item(json)
-                case 'codefiles':
-                    return nullify_item(json)
                 case _:
                     return unsupported_operation(json)
         case 'higherItem':
@@ -548,94 +480,6 @@ def create_conversation(json):
         con.commit()
         res = cur.execute("SELECT id FROM items WHERE context = ? AND system = ? AND rank = ?", (json['context'], json['system'], rank,))
         item_id = res.fetchone()['id']
-        cur.close()
-        con.close()
-        operation['successful'] = True
-        operation['response'] = dict(id=item_id, rank=rank)
-        return operation
-    except Exception as error:
-        print(error)
-        return unsuccessful_operation(json)
-
-
-def create_developer(json):
-    # return deliberate_failure() # For testing (simulated server issue).
-    operation = dict()
-    if json['data']['name']:
-        operation['valid'] = True
-    else:
-        return invalid_operation('item name')
-    try:
-        con = sqlite3.connect(db)
-        con.row_factory = dict_factory
-        cur = con.cursor()
-        res = cur.execute("SELECT COUNT(*) as count FROM items WHERE context = ? AND system = ? AND rank NOT NULL", (json['context'], json['system'],))
-        count = res.fetchone()['count']
-        rank = count + 1
-        cur.execute("INSERT INTO items(name, rank, context, system) VALUES( ?, ?, ?, ?)", (json['data']['name'], rank, json['context'], json['system'],))
-        con.commit()
-        res = cur.execute("SELECT id FROM items WHERE context = ? AND system = ? AND rank = ?", (json['context'], json['system'], rank,))
-        item_id = res.fetchone()['id']
-        cur.close()
-        con.close()
-        operation['successful'] = True
-        operation['response'] = dict(id=item_id, rank=rank)
-        return operation
-    except Exception as error:
-        print(error)
-        return unsuccessful_operation(json)
-
-
-def create_codefile(json):
-    # return deliberate_failure() # For testing (simulated server issue).
-    operation = dict()
-    if json['data']['name']:
-        operation['valid'] = True
-    else:
-        return invalid_operation('item name')
-    try:
-        con = sqlite3.connect(db)
-        con.row_factory = dict_factory
-        cur = con.cursor()
-        res = cur.execute("SELECT COUNT(*) as count FROM items WHERE context = ? AND system = ? AND rank NOT NULL", (json['context'], json['system'],))
-        count = res.fetchone()['count']
-        rank = count + 1
-        cur.execute("INSERT INTO items(name, rank, context, system) VALUES( ?, ?, ?, ?)", (json['data']['name'], rank, json['context'], json['system'],))
-        con.commit()
-        res = cur.execute("SELECT id FROM items WHERE context = ? AND system = ? AND rank = ?", (json['context'], json['system'], rank,))
-        item_id = res.fetchone()['id']
-        cur.close()
-        con.close()
-        operation['successful'] = True
-        operation['response'] = dict(id=item_id, rank=rank)
-        return operation
-    except Exception as error:
-        print(error)
-        return unsuccessful_operation(json)
-
-
-def create_llm(json):
-    # return deliberate_failure() # For testing (simulated server issue).
-    operation = dict()
-    if json['data']['name']:
-        operation['valid'] = True
-    else:
-        return invalid_operation('item name')
-    try:
-        con = sqlite3.connect(db)
-        con.row_factory = dict_factory
-        cur = con.cursor()
-        res = cur.execute("SELECT COUNT(*) as count FROM items WHERE context = ? AND system = ? AND rank NOT NULL", (json['context'], json['system'],))
-        count = res.fetchone()['count']
-        rank = count + 1
-        cur.execute("INSERT INTO items(name, rank, context, system) VALUES( ?, ?, ?, ?)", (json['data']['name'], rank, json['context'], json['system'],))
-        con.commit()
-        res = cur.execute("SELECT id FROM items WHERE context = ? AND system = ? AND rank = ?", (json['context'], json['system'], rank,))
-        item_id = res.fetchone()['id']
-        # Insert the first detail with the model
-        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (item_id, 'llm', json['data']['model'], 1,))
-        # Insert the second detail with the instructions
-        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (item_id, 'llm_manager', json['data']['instructions'], 2,))
         cur.close()
         con.close()
         operation['successful'] = True
@@ -771,32 +615,6 @@ def update_conversation(json):
         con.row_factory = dict_factory
         cur = con.cursor()
         cur.execute("UPDATE items SET name = ? WHERE id = ?", (json['data']['name'], json['data']['id'],))
-        con.commit()
-        cur.close()
-        con.close()
-        operation['successful'] = True
-        operation['response'] = dict(message='Nothing needed.')
-        return operation
-    except Exception as error:
-        print(error)
-        return unsuccessful_operation(json)
-    
-
-def update_llm(json):
-    # return deliberate_failure() # For testing (simulated server issue).
-    operation = dict()
-    if json['data']['name'] and json['data']['id']:
-        operation['valid'] = True
-    else:
-        return invalid_operation('item name, item id')
-    try:
-        con = sqlite3.connect(db)
-        con.row_factory = dict_factory
-        cur = con.cursor()
-        cur.execute("UPDATE items SET name = ? WHERE id = ?", (json['data']['name'], json['data']['id'],))
-        cur.execute("UPDATE details SET content = ? WHERE item_id = ? AND rank = 1", (json['data']['model'], json['data']['id'],))
-        instructions = f'Assume the role of {json["data"]["role"]}. {json["data"]["purpose"]}'
-        cur.execute("UPDATE details SET content = ? WHERE item_id = ? AND rank = 2", (instructions, json['data']['id'],))
         con.commit()
         cur.close()
         con.close()
@@ -1114,14 +932,12 @@ def create_message(json):
         con.commit()
         # generate chat completion
             # Generate the package for the ai bot
-        item_package = dict()
-        item_package['items'] = list()
-        res = cur.execute("SELECT id, rank, name FROM items WHERE context = ? AND system = ? AND rank NOT NULL ORDER BY rank", (json['context'], 'items',))
+        item_package = list()
+        res = cur.execute("SELECT id, name FROM items WHERE context = ? AND system = ? AND rank NOT NULL ORDER BY rank", (json['context'], 'items',))
         items = res.fetchall()
         for i, item in enumerate(items):
-            item_package['items'].append({
+            item_package.append({
                 'name': item['name'],
-                'rank': item['rank'],
                 'details': list()
             })
             # select the details from the database
@@ -1130,115 +946,23 @@ def create_message(json):
             details = res.fetchall()
             for detail in details:
                 # put a security check here.
-                item_package['items'][i]['details'].append(detail['content'])
+                item_package[i]['details'].append(detail['content'])
         # generate conversation history
         res = cur.execute("SELECT role, content FROM details WHERE item_id = ? AND rank NOT NULL ORDER BY rank", (json['data']['id'],))
         conversation_history = res.fetchall()
-        completion = llm_chat(conversation_history, json['data']['content'], item_package, json['context'])
+        completion = openai_response(item_package, conversation_history)
+        print(completion)
         # insert chat completion to db
         rank += 1
-        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], 'assistant', completion, rank,))
+        print("here")
+        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], 'assistant', completion['text'], rank,))
+        print("here")
         con.commit()
         cur.close()
         con.close()
         # add chat completion to server response
         operation['successful'] = True
-        operation['response'] = dict(content=completion)
-        return operation
-    except Exception as error:
-        print(error)
-        return unsuccessful_operation(json)
-
-
-from pathlib import Path # For codefiles system
-
-def create_developer_message(json):
-    # return deliberate_failure() # For testing (simulated server issue).
-    operation = dict()
-    if json['data']['content'] and json['data']['id']:
-        operation['valid'] = True
-    else:
-        return invalid_operation('content', 'item id')
-    try:
-        con = sqlite3.connect(db)
-        con.row_factory = dict_factory
-        cur = con.cursor()
-        res = cur.execute("SELECT COUNT(*) as count FROM details WHERE item_id = ? AND rank NOT NULL", (json['data']['id'],))
-        count = res.fetchone()['count']
-        rank = count + 1
-        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], 'user', json['data']['content'], rank,))
-        con.commit()
-        item_package = dict()
-        item_package['codefiles'] = list()
-        res = cur.execute("SELECT name FROM items WHERE context = ? AND system = ? AND rank NOT NULL ORDER BY rank", (json['context'], 'codefiles',))
-        items = res.fetchall()
-        for i, item in enumerate(items):
-            item_package['codefiles'].append({
-                'path': item['name'],
-                'contents': str()
-            })
-            # read the file contents from the os
-            with open(f'{item["name"]}', mode = 'r') as file: # need to put error handling in here in case the file doesn't exist or there's an IO error.
-                code = file.read()
-            language = Path(item['name']).suffix[1:]
-            contents = f'```{language}\n{code}\n```'
-            # add them to the package.
-            item_package['codefiles'][i]['contents'] = contents
-            
-        # generate conversation history
-        res = cur.execute("SELECT role, content FROM details WHERE item_id = ? AND rank NOT NULL ORDER BY rank", (json['data']['id'],))
-        conversation_history = res.fetchall()
-        completion = llm_developer_chat(conversation_history, json['data']['content'], item_package, json['context'])
-        # insert chat completion to db
-        rank += 1
-        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], 'assistant', completion, rank,))
-        con.commit()
-        cur.close()
-        con.close()
-        # add chat completion to server response
-        operation['successful'] = True
-        operation['response'] = dict(content=completion)
-        return operation
-    except Exception as error:
-        print(error)
-        return unsuccessful_operation(json)
-
-
-def create_message_llms(json):
-    # return deliberate_failure() # For testing (simulated server issue).
-    operation = dict()
-    if json['data']['content'] and json['data']['id']:
-        operation['valid'] = True
-    else:
-        return invalid_operation('content', 'item id')
-    try:
-        con = sqlite3.connect(db)
-        con.row_factory = dict_factory
-        cur = con.cursor()
-        res = cur.execute("SELECT COUNT(*) as count FROM details WHERE item_id = ? AND rank NOT NULL", (json['data']['id'],))
-        count = res.fetchone()['count']
-        rank = count + 1
-        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], 'user', json['data']['content'], rank,))
-        con.commit()
-        # generate llm response
-        # generate conversation history
-        res = cur.execute("SELECT role, content FROM details WHERE item_id = ? AND rank > 2 AND rank NOT NULL ORDER BY rank", (json['data']['id'],))
-        conversation_history = res.fetchall()
-        if json['data']['model'] in ['gpt-4o-mini', 'gpt-4o', 'o3-mini', 'o1']:
-            llm_response = openai_response(json['data']['model'], json['data']['instructions'], conversation_history, json['data']['content'])
-        elif json['data']['model'] in ['gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro', 'gemini-2.0-flash-exp']:
-            llm_response = gemini_response(json['data']['model'], json['data']['instructions'], conversation_history, json['data']['content'])
-        elif json['data']['model'] in ['claude-3-5-haiku-latest', 'claude-3-5-sonnet-latest']:
-            llm_response = anthropic_response(json['data']['model'], json['data']['instructions'], conversation_history, json['data']['content'])
-        # insert chat completion to db
-        rank += 1
-        cur.execute("INSERT INTO details(item_id, role, content, rank) VALUES(?, ?, ?, ?)", (json['data']['id'], llm_response['role'], llm_response['text'], rank,))
-        con.commit()
-        cur.close()
-        con.close()
-        # add chat completion to server response
-        operation['successful'] = True
-        operation['response'] = dict(content=llm_response['text'])
+        operation['response'] = dict(content=completion['text'])
         return operation
     except Exception as error:
         print(error)
@@ -1285,10 +1009,6 @@ def contexts():
                     cur.execute("INSERT INTO systems(name, context) VALUES('items', ?)", (request.json['data']['contextNewName'],))
                 if 'conversations' in request.json['data']:
                     cur.execute("INSERT INTO systems(name, context) VALUES('conversations', ?)", (request.json['data']['contextNewName'],))
-                if 'developers' in request.json['data']:
-                    cur.execute("INSERT INTO systems(name, context) VALUES('developers', ?)", (request.json['data']['contextNewName'],))
-                if 'codefiles' in request.json['data']:
-                    cur.execute("INSERT INTO systems(name, context) VALUES('codefiles', ?)", (request.json['data']['contextNewName'],))
                 con.commit()
                 cur.close()
                 con.close()
@@ -1329,4 +1049,4 @@ def contexts():
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)

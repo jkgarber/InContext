@@ -72,8 +72,7 @@ class IcOverview extends HTMLElement {
     removeManagerForm() {
     
         this.icManagerForm.remove();
-        this.icManagerForm = null;
-        this.icManager.classList.remove("display-none");
+        
     }
 
     async sendRequest(payload) {
@@ -420,26 +419,6 @@ class IcManagerForm extends HTMLElement {
                 "checked": this.icOverview.icSystems.includes("conversations")
             }
         });
-        specs[1].push({
-            "element": "input",
-            "attributes": {
-                "id": "system-developers",
-                "type": "checkbox",
-                "label": "Developers",
-                "name": "developers",
-                "checked": this.icOverview.icSystems.includes("developers")
-            }
-        });
-        specs[1].push({
-            "element": "input",
-            "attributes": {
-                "id": "system-codefiles",
-                "type": "checkbox",
-                "label": "Codefiles",
-                "name": "codefiles",
-                "checked": this.icOverview.icSystems.includes("codefiles")
-            }
-        });
         
         const fields = document.createElement("div");
         fields.classList.add("manager-form-fields");
@@ -540,6 +519,11 @@ class IcManagerForm extends HTMLElement {
         });
         this.appendChild(form);
     }
+
+    disconnectedCallback() {
+        this.icOverview.icManagerForm = null;
+        this.icOverview.icManager.classList.remove("display-none");
+    }
 }
 customElements.define("ic-manager-form", IcManagerForm);
 
@@ -578,9 +562,6 @@ class IcContext extends HTMLElement {
             for (const system of systems) {
                 switch (system.name) {
                     case "conversations":
-                        this.childNodes[0].appendChild(new IcSystem(this, system));
-                        break;
-                    case "developers":
                         this.childNodes[0].appendChild(new IcSystem(this, system));
                         break;
                     default:
@@ -728,50 +709,6 @@ class IcSystem extends HTMLElement {
                     "action": "nullify",
                     "symbol": "&#8856; Delete",
                 }
-            ],
-            "developers": [
-                {
-                    "action": "update",
-                    "symbol": "&#9998; Update",
-                },
-                {
-                    "action": "create",
-                    "symbol": "&#10022; Create",
-                },
-                {
-                    "action": "nullify",
-                    "symbol": "&#8856; Delete",
-                }
-            ],
-            "codefiles": [
-                {
-                    "action": "update",
-                    "symbol": "&#9998; Update",
-                },
-                {
-                    "action": "create",
-                    "symbol": "&#10022; Create",
-                },
-                {
-                    "action": "nullify",
-                    "symbol": "&#8856; Delete",
-                },
-                {
-                    "action": "higher",
-                    "symbol": "&uarr; Higher",
-                },
-                {
-                    "action": "lower",
-                    "symbol": "&darr; Lower",
-                },
-                {
-                    "action": "top",
-                    "symbol": "&#8607; Top",
-                },
-                {
-                    "action": "bottom",
-                    "symbol": "&#8609; Bottom",
-                }
             ]
         }
         const spec = specs[this.icName];
@@ -792,7 +729,7 @@ class IcSystem extends HTMLElement {
                 
                 if (this.icSelectedDetail) {
                     
-                    if (["items", "codefiles"].includes(this.icName)) {
+                    if (["items"].includes(this.icName)) {
 
                         const prime = ["update", "nullify"];
                         for (const control of this.icControls) {
@@ -815,7 +752,6 @@ class IcSystem extends HTMLElement {
                     else if (n == rank) {
                         dontPrime.push("lower", "bottom");
                     }
-                    if (this.icName == "codefiles") dontPrime.push("create");
                     for (const control of this.icControls) {
                         if (!dontPrime.includes(control.icAction)) {
                             control.icPrimed = true;
@@ -847,15 +783,13 @@ class IcSystem extends HTMLElement {
 
     removeForm() {
         this.icForm.remove();
-        this.icForm = null;
-        this.primeControls();
-        this.styleControls();
+        
     }
     
     updateDisplay(data, operation) {
         switch (operation) {
             case "createItem":
-                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
+                if (["items", "conversations"].includes(this.icName)) {
                     const system = this;
                     const item = new Object();
                     item.id = null;
@@ -872,7 +806,7 @@ class IcSystem extends HTMLElement {
                 // Nothing needed. The user just gets a csv file. Nothing changes.
                 break;
             case "updateItem":
-                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
+                if (["items", "conversations"].includes(this.icName)) {
                     this.icSelectedItem.updateSelf(data);
                 }
                 break;
@@ -880,7 +814,7 @@ class IcSystem extends HTMLElement {
                 this.icSelectedItem.createDetail(data);
                 break;
             case "nullifyItem":
-                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
+                if (["items", "conversations"].includes(this.icName)) {
                     for (const item of this.icItems) {
                         if (item.icRank > this.icSelectedItem.icRank) {
                             item.icRank = item.icRank - 1;
@@ -898,7 +832,7 @@ class IcSystem extends HTMLElement {
                 }
                 break;
             case "lowerItem":
-                if (["items", "codefiles"].includes(this.icName)) {
+                if (["items"].includes(this.icName)) {
                     const lowerItem = this.icItems[this.icSelectedItem.icRank];
                     const newLowerItem = this.icItems[this.icSelectedItem.icRank + 1]
                     this.icItems.splice(this.icSelectedItem.icRank - 1, 2, lowerItem, this.icSelectedItem);
@@ -907,7 +841,7 @@ class IcSystem extends HTMLElement {
                 }
                 break;
             case "topItem":
-                if (["items", "codefiles"].includes(this.icName)) {
+                if (["items"].includes(this.icName)) {
                     this.icItemDisplay.insertBefore(this.icSelectedItem, this.icItems[0]);
                     for (let i = 0; i < this.icItemDisplay.childElementCount; i++) {
                         this.icItems[i] = this.icItemDisplay.childNodes[i];
@@ -916,7 +850,7 @@ class IcSystem extends HTMLElement {
                 }
                 break;
             case "bottomItem":
-                if (["items", "codefiles"].includes(this.icName)) {
+                if (["items"].includes(this.icName)) {
                     // Update the DOM
                     this.icItemDisplay.appendChild(this.icSelectedItem);
                     // Update this.icItems
@@ -927,13 +861,13 @@ class IcSystem extends HTMLElement {
                 }
                 break;
             case "updateDetail": {
-                if (["items", "codefiles"].includes(this.icName)) {
+                if (["items"].includes(this.icName)) {
                     this.icSelectedDetail.updateSelf(data);
                 }
                 break;
             }
             case "nullifyDetail":
-                if (["items", "codefiles"].includes(this.icName)) {
+                if (["items"].includes(this.icName)) {
                     this.icSelectedDetail.remove();
                 }
                 for (const detail of this.icSelectedItem.icDetails) {
@@ -987,7 +921,7 @@ class IcSystem extends HTMLElement {
         switch (operation) {
 
             case "createItem":
-                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
+                if (["items", "conversations"].includes(this.icName)) {
                     const len = this.icItems.length;
                     const newItem = this.icItems[len - 1];
                     newItem.icId = data.id;
@@ -1040,7 +974,7 @@ class IcSystem extends HTMLElement {
                 // Nothing needed.
                 break;
             case "createDetail":
-                if (["conversations", "developers"].includes(this.icName)) {
+                if (["conversations"].includes(this.icName)) {
                     this.icSelectedItem.createMessage(data);
                 }
                 break;
@@ -1079,7 +1013,7 @@ class IcSystem extends HTMLElement {
     revertDisplayUpdate(data, operation) {
         switch (operation) {
             case "createItem":
-                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
+                if (["items", "conversations"].includes(this.icName)) {
                     const len = this.icItems.length;
                     this.icItems[len - 1].remove();
                     const l = this.icItems.pop();
@@ -1097,12 +1031,12 @@ class IcSystem extends HTMLElement {
                 break;
             case "updateItem":
                 data.name = data.oldName;
-                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
+                if (["items", "conversations"].includes(this.icName)) {
                     this.icSelectedItem.updateSelf(data);
                 }
                 break;
             case "createDetail":
-                if (["items", "conversations", "developers", "codefiles"].includes(this.icName)) {
+                if (["items", "conversations"].includes(this.icName)) {
                     const len = this.icSelectedItem.icDetails.length;
                     this.icSelectedItem.icDetailDisplay.childNodes[len - 1].remove();
                     const l = this.icSelectedItem.icDetails.pop();
@@ -1177,7 +1111,7 @@ class IcSystem extends HTMLElement {
             }
             case "updateDetail":
                 data.content = data.oldContent;
-                if (["items", "codefiles"].includes(this.icName)) {
+                if (["items"].includes(this.icName)) {
                     this.icSelectedDetail.updateSelf(data);
                 }
                 break;
@@ -1246,7 +1180,7 @@ class IcItem extends HTMLElement {
             nameContainer.innerHTML = this.icSystem.icContext.mdConverter.makeHtml(this.icName);
             this.appendChild(nameContainer);
 
-            if (["items", "conversations", "developers"].includes(this.icSystem.icName)) {
+            if (["items", "conversations"].includes(this.icSystem.icName)) {
                 const icDetailDisplay = document.createElement("div");
                 icDetailDisplay.classList.add("hidden");
                 icDetailDisplay.classList.add("ic-detail-display");
@@ -1303,7 +1237,7 @@ class IcItem extends HTMLElement {
     }
 
     ctrlClicked(event) {
-        if (["items", "conversations", "developers"].includes(this.icSystem.icName)) {
+        if (["items", "conversations"].includes(this.icSystem.icName)) {
             this.classList.toggle("showing-details");
             this.icDetailDisplay.classList.toggle("hidden");
         }
@@ -1601,44 +1535,33 @@ class IcForm extends HTMLElement {
         const infoTexts = {
             "createItem": {
                 "items": "You're creating an item.",
-                "conversations": "You're creating a conversation.",
-                "developers": "You're creating a developer.",
-                "codefiles": "You're specifying a codefile."
+                "conversations": "You're creating a conversation."
             },
             "importItems": {
-                "items": "You're importing items.",
-                "codefiles": "You're importing codefile specifications."
+                "items": "You're importing items."
             },
             "exportItems": {
-                "items": "You're exporting items.",
-                "codefiles": "You're exporting codefile specifications."
+                "items": "You're exporting items."
             },
             "updateItem": {
                 "items": "You're updating an item.",
-                "conversations": "You're updating a conversation.",
-                "developers": "You're updating a conversation.",
-                "codefiles": "You're updating a codefile specification."
+                "conversations": "You're updating a conversation."
             },
             "createDetail": {
                 "items": "You're creating a detail.",
-                "conversations": "You're creating a message.",
-                "developers": "You're creating a message."
+                "conversations": "You're creating a message."
             },
             "nullifyItem": {
                 "items": "You're deleting an item.",
-                "conversations": "Are you sure you want to delete this conversation?",
-                "developers": "Are you sure you want to delete this developer?",
-                "codefiles": "You're deleting a codefile specification."
+                "conversations": "Are you sure you want to delete this conversation?"
             },
             "updateDetail": {
                 "items": "You're updating a detail.",
-                "conversations": "Do not proceed.",
-                "developers": "Do not proceed."
+                "conversations": "Do not proceed."
             },
             "nullifyDetail": {
                 "items": "You're deleting an detail.",
-                "conversations": "Do not proceed.",
-                "developers": "Do not proceed."
+                "conversations": "Do not proceed."
             }
         }
         const infoText = infoTexts[this.icOperation][this.icSystem.icName];
@@ -1690,34 +1613,6 @@ class IcForm extends HTMLElement {
                                 "type": "text",
                                 "label": "Name",
                                 "name": "name"
-                            }
-                        });
-                        break;
-                    }
-                    case "developers": {
-                        specs.push(new Array());
-                        const id = `${this.icSystem.icName}-${specs[0].length}`;
-                        specs[0].push({
-                            "element": "input",
-                            "attributes": {
-                                "id": id,
-                                "type": "text",
-                                "label": "Name",
-                                "name": "name"
-                            }
-                        });
-                        break;
-                    }
-                    case "codefiles": {
-                        specs.push(new Array());
-                        const id = `${this.icSystem.icName}-${specs[0].length}`;
-                        specs[0].push({
-                            "element": "input",
-                            "attributes": {
-                                "id": id,
-                                "type": "text",
-                                "name": "name",
-                                "label": "Path"
                             }
                         });
                         break;
@@ -1840,76 +1735,6 @@ class IcForm extends HTMLElement {
                         })
                         break;
                     }
-                    case "developers": {
-                        specs.push(new Array());
-                        let id = `${this.icSystem.icName}-${specs[0].length}`;
-                        specs[0].push({
-                            "element": "input",
-                            "attributes": {
-                                "id": id,
-                                "type": "text",
-                                "label": "Name",
-                                "name": "name",
-                                "value": this.icSystem.icSelectedItem.icName
-                            }
-                        });
-                        id = `${this.icSystem.icName}-${specs[0].length}`;
-                        specs[0].push({
-                            "element": "input",
-                            "attributes": {
-                                "id": id,
-                                "type": "hidden",
-                                "name": "id",
-                                "value": this.icSystem.icSelectedItem.icId
-                            }
-                        })
-                        id = `${this.icSystem.icName}-${specs[0].length}`;
-                        specs[0].push({
-                            "element": "input",
-                            "attributes": {
-                                "id": id,
-                                "type": "hidden",
-                                "name": "oldName",
-                                "value": this.icSystem.icSelectedItem.icName
-                            }
-                        })
-                        break;
-                    }
-                    case "codefiles": {
-                        specs.push(new Array());
-                        let id = `${this.icSystem.icName}-${specs[0].length}`;
-                        specs[0].push({
-                            "element": "input",
-                            "attributes": {
-                                "id": id,
-                                "type": "text",
-                                "label": "Path",
-                                "name": "name",
-                                "value": this.icSystem.icSelectedItem.icName
-                            }
-                        });
-                        id = `${this.icSystem.icName}-${specs[0].length}`;
-                        specs[0].push({
-                            "element": "input",
-                            "attributes": {
-                                "id": id,
-                                "type": "hidden",
-                                "name": "id",
-                                "value": this.icSystem.icSelectedItem.icId
-                            }
-                        })
-                        id = `${this.icSystem.icName}-${specs[0].length}`;
-                        specs[0].push({
-                            "element": "input",
-                            "attributes": {
-                                "id": id,
-                                "type": "hidden",
-                                "name": "oldName",
-                                "value": this.icSystem.icSelectedItem.icName
-                            }
-                        })
-                        break;
-                    }
                     default:
                         console.error("Unexpected switch statement fall-through.");
                 }
@@ -1961,28 +1786,6 @@ class IcForm extends HTMLElement {
                         });
                         break;
                     }
-                    case "developers": {
-                        specs.push(new Array());
-                        const id = `${this.icSystem.icName}-${specs[0].length}`;
-                        specs[0].push({
-                            "element": "textarea",
-                            "attributes": {
-                                "id": id,
-                                "label": "Message",
-                                "name": "content",
-                                "type": "textarea" // Needed for the class attribute.
-                            }
-                        });
-                        specs[0].push({
-                            "element": "input",
-                            "attributes": {
-                                "type": "hidden",
-                                "name": "id",
-                                "value": this.icSystem.icSelectedItem.icId
-                            }
-                        });
-                        break;
-                    }
                     default:
                         console.error("Unexpected switch statement fall-through.");
                 }
@@ -2003,30 +1806,6 @@ class IcForm extends HTMLElement {
                         break;
                     }
                     case "conversations": {
-                        specs.push(new Array());
-                        specs[0].push({
-                            "element": "input",
-                            "attributes": {
-                                "type": "hidden",
-                                "name": "id",
-                                "value": this.icSystem.icSelectedItem.icId
-                            }
-                        });
-                        break;
-                    }
-                    case "developers": {
-                        specs.push(new Array());
-                        specs[0].push({
-                            "element": "input",
-                            "attributes": {
-                                "type": "hidden",
-                                "name": "id",
-                                "value": this.icSystem.icSelectedItem.icId
-                            }
-                        });
-                        break;
-                    }
-                    case "codefiles": {
                         specs.push(new Array());
                         specs[0].push({
                             "element": "input",
@@ -2174,8 +1953,6 @@ class IcForm extends HTMLElement {
                     }
                     case "conversations":
                         break;
-                    case "developers":
-                        break;
                     default:
                         console.error("Unexpected switch statement fall-through.");
                 }
@@ -2204,8 +1981,6 @@ class IcForm extends HTMLElement {
                         break;
                     }
                     case "conversations":
-                        break;
-                    case "developers":
                         break;
                     default:
                         console.error("Unexpected switch statement fall-through.");
@@ -2351,6 +2126,8 @@ class IcForm extends HTMLElement {
 
     disconnectedCallback() {
         this.icSystem.icForm = null;
+        this.icSystem.primeControls();
+        this.icSystem.styleControls();
     }
 }
 customElements.define("ic-form", IcForm);
