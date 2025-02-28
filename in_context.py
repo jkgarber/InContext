@@ -951,7 +951,6 @@ def create_message(json):
         res = cur.execute("SELECT role, content FROM details WHERE item_id = ? AND rank NOT NULL ORDER BY rank", (json['data']['id'],))
         conversation_history = res.fetchall()
         completion = openai_response(item_package, conversation_history)
-        print(completion)
         # insert chat completion to db
         rank += 1
         print("here")
